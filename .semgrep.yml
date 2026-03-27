@@ -1,0 +1,6 @@
+rules:
+  - p/python: # Python 语言规则
+  - p/fastapi: # FastAPI 框架规则（路由鉴权、输入验证等）
+  - p/sqlalchemy: # SQLAlchemy 规则（SQL 注入、会话管理）
+  - p/security-audit: # 安全审计（加密、认证、敏感数据处理）
+  - p/owasp-top-ten: # OWASP Top 10
