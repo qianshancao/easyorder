@@ -32,6 +32,36 @@ rules:
     languages: [python]
     pattern: String()
 
+  # 金融安全：禁止 float 用于金额
+  - id: no-float-for-money
+    message: 金额字段必须使用 int（分），禁止使用 float，避免精度丢失
+    severity: ERROR
+    languages: [python]
+    pattern-either:
+      - pattern: "$X: Mapped[float] = mapped_column(...)"
+
+  # API 契约：FastAPI 端点必须有 response_model
+  - id: fastapi-endpoint-must-have-response-model
+    message: FastAPI 端点必须声明 response_model，确保 API 契约受控
+    severity: ERROR
+    languages: [python]
+    paths:
+      include:
+        - "/app/api/**"
+    patterns:
+      - pattern-inside: |
+          @router.$METHOD(...)
+          def $FUNC(...):
+              ...
+      - pattern-not-inside: |
+          @router.$METHOD(..., response_model=...)
+          def $FUNC(...):
+              ...
+      - pattern: |
+          @router.$METHOD(...)
+          def $FUNC(...):
+              ...
+
   # 架构约束：api 层禁止直接访问数据层（排除 deps.py）
   - id: api-no-direct-data-access
     message: api 层禁止直接 import repositories 或 models，必须通过 service 层
@@ -74,6 +104,18 @@ rules:
       - pattern: import app.schemas
       - pattern: from app.services import $X
       - pattern: from app.api import $X
+      - pattern: from app.schemas import $X
+
+  # 架构约束：models 层禁止 import schemas 层
+  - id: model-no-schema-import
+    message: model 层禁止 import schemas 层，ORM 和 Pydantic 必须分离
+    severity: ERROR
+    languages: [python]
+    paths:
+      include:
+        - "/app/models/**"
+    pattern-either:
+      - pattern: import app.schemas
       - pattern: from app.schemas import $X
 
   # 依赖注入约束：api 层禁止直接实例化 service，必须通过 Depends() 注入

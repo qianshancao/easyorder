@@ -1,9 +1,13 @@
-from datetime import datetime
+from datetime import UTC, datetime
 
 from sqlalchemy import JSON, DateTime, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.models.base import Base
+
+
+def _utcnow() -> datetime:
+    return datetime.now(tz=UTC)
 
 
 class Plan(Base):
@@ -19,5 +23,5 @@ class Plan(Base):
     features: Mapped[dict[str, object] | None] = mapped_column(JSON, nullable=True, default=None)
     renewal_rules: Mapped[dict[str, object] | None] = mapped_column(JSON, nullable=True, default=None)
     status: Mapped[str] = mapped_column(String(20), default="active")
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
-    updated_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, default=None)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
+    updated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True, default=None)
