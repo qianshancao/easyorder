@@ -1,6 +1,47 @@
 rules:
-  - p/python: # Python 语言规则
-  - p/fastapi: # FastAPI 框架规则（路由鉴权、输入验证等）
-  - p/sqlalchemy: # SQLAlchemy 规则（SQL 注入、会话管理）
-  - p/security-audit: # 安全审计（加密、认证、敏感数据处理）
-  - p/owasp-top-ten: # OWASP Top 10
+  # 外部规则集
+  - p/python:
+  - p/fastapi:
+  - p/sqlalchemy:
+  - p/security-audit:
+  - p/owasp-top-ten:
+
+  # 架构约束：api 层禁止直接访问数据层
+  - id: api-no-direct-data-access
+    message: api 层禁止直接 import repositories 或 models，必须通过 service 层
+    severity: ERROR
+    languages: [python]
+    paths:
+      include:
+        - "app/api/**"
+    patterns:
+      - pattern: import app.repositories
+      - pattern: import app.models
+      - pattern: from app.repositories import ...
+      - pattern: from app.models import ...
+
+  # 架构约束：services 层禁止访问 api 层
+  - id: service-no-api-import
+    message: service 层禁止 import api 层
+    severity: ERROR
+    languages: [python]
+    paths:
+      include:
+        - "app/services/**"
+    patterns:
+      - pattern: import app.api
+      - pattern: from app.api import ...
+
+  # 架构约束：repositories 层禁止访问 services 或 api 层
+  - id: repo-no-upper-layer-import
+    message: repository 层禁止 import services 或 api 层
+    severity: ERROR
+    languages: [python]
+    paths:
+      include:
+        - "app/repositories/**"
+    patterns:
+      - pattern: import app.services
+      - pattern: import app.api
+      - pattern: from app.services import ...
+      - pattern: from app.api import ...
