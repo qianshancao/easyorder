@@ -36,6 +36,7 @@ uv run semgrep scan --config .semgrep.yml .  # 安全扫描
 
 - 三层架构：api → services → repositories → models
 - 严禁反向依赖和跨层调用
+- 必须使用依赖注入：api 通过 Depends() 注入 service，service 通过构造函数注入 repository
 - Pydantic schema 与 ORM model 分离
 
 ### Git

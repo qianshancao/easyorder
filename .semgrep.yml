@@ -4,6 +4,27 @@ rules:
   - p/fastapi:
   - p/sqlalchemy:
   - p/security-audit:
+
+  # SQLAlchemy 2.0：禁止使用 1.x 旧语法
+  - id: sqlalchemy-no-declarative-base
+    message: 使用 DeclarativeBase 替代 declarative_base()
+    severity: ERROR
+    languages: [python]
+    pattern: declarative_base(...)
+
+  - id: sqlalchemy-no-column
+    message: 使用 Mapped + mapped_column() 替代 Column()
+    severity: ERROR
+    languages: [python]
+    pattern: Column(...)
+
+  - id: sqlalchemy-no-legacy-query
+    message: 使用 select() 替代 session.query()
+    severity: ERROR
+    languages: [python]
+    pattern: $SESSION.query(...)
+
+  - p/security-audit:
   - p/owasp-top-ten:
 
   # 架构约束：api 层禁止直接访问数据层
@@ -45,3 +66,29 @@ rules:
       - pattern: import app.api
       - pattern: from app.services import ...
       - pattern: from app.api import ...
+
+  # 依赖注入约束：api 层禁止直接实例化 service，必须通过 Depends() 注入
+  - id: api-no-direct-service-instantiation
+    message: api 层禁止直接实例化 service，必须通过 Depends() 依赖注入
+    severity: ERROR
+    languages: [python]
+    paths:
+      include:
+        - "app/api/**"
+    patterns:
+      - pattern-inside: |
+          from app.services import $SERVICE
+      - pattern: $SERVICE(...)
+
+  # 依赖注入约束：service 层禁止直接实例化 repository，必须通过构造函数注入
+  - id: service-no-direct-repo-instantiation
+    message: service 层禁止直接实例化 repository，必须通过构造函数依赖注入
+    severity: ERROR
+    languages: [python]
+    paths:
+      include:
+        - "app/services/**"
+    patterns:
+      - pattern-inside: |
+          from app.repositories import $REPO
+      - pattern: $REPO(...)
