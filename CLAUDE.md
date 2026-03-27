@@ -27,7 +27,8 @@ uv run pytest                    # 运行测试
 uv run pyright                   # 类型检查
 uv run ruff check .              # Lint
 uv run ruff format .             # 格式化
-uv run semgrep scan --config .semgrep.yml .  # 安全扫描
+uv run semgrep scan --config .semgrep.yml .  # 架构与兼容性扫描
+uv run semgrep scan --config auto .          # 安全扫描（外部规则集）
 ```
 
 ## 开发规范
