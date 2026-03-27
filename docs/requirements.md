@@ -254,7 +254,7 @@ FastAPI 三层架构
 | 语言 | Python 3.12+ |
 | 框架 | FastAPI |
 | 包管理 | uv |
-| 数据库 | PostgreSQL |
+| 数据库 | MySQL（生产）/ SQLite（开发） |
 | ORM | SQLAlchemy |
 | 迁移 | Alembic |
 | 缓存 | Redis |
