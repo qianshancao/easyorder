@@ -29,6 +29,7 @@ services:
       - "--storageDataPath=/storage"
       - "--retentionPeriod=30d"
       - "--httpListenAddr=:8428"
+      - "--opentelemetry.usePrometheusNaming"
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8428/health"]
       start_period: 10s
