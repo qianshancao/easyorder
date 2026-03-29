@@ -46,7 +46,23 @@ uv run semgrep scan --config auto .          # 安全扫描（外部规则集）
 - 提交信息使用中文
 - Co-Authored-By: GLM 5.1 <noreply@z.ai>
 
+## 可观测性栈
+
+验证运行行为、复现 bug 时使用。用完必须清理。
+
+```bash
+docker compose up -d                   # 启动 OTEL Collector + VictoriaMetrics + VictoriaTraces + VictoriaLogs
+docker compose down -v                 # 清理（含数据卷）
+```
+
+App 通过 OTEL SDK 向 `localhost:4317`（gRPC）/ `localhost:4318`（HTTP）发送遥测数据，查询 API：
+
+- Metrics: `curl 'localhost:8428/api/v1/query?query=...'`
+- Traces: `curl 'localhost:9428/api/traces...'`
+- Logs: `curl 'localhost:9429/select/logsql/query?query=...'`
+
 ## IMPORTANT
 
 - 修改代码后运行 ruff check 和 pyright 确认无报错
 - 数据库模型变更需要同步更新对应的 schema 和 repository
+- 可观测性栈用完后必须 `docker compose down -v` 清理

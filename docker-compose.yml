@@ -1,0 +1,88 @@
+services:
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    container_name: easyorder-otel
+    command: ["--config", "/etc/otelcol/config.yml"]
+    volumes:
+      - ./otel-collector.yml:/etc/otelcol/config.yml:ro
+    ports:
+      - "4317:4317"   # OTLP gRPC
+      - "4318:4318"   # OTLP HTTP
+    depends_on:
+      victoriametrics:
+        condition: service_healthy
+      victoriatraces:
+        condition: service_healthy
+      victorialogs:
+        condition: service_healthy
+    networks:
+      - monitoring
+
+  victoriametrics:
+    image: victoriametrics/victoria-metrics:latest
+    container_name: easyorder-vm
+    ports:
+      - "8428:8428"
+    volumes:
+      - vmdata:/storage
+    command:
+      - "--storageDataPath=/storage"
+      - "--retentionPeriod=30d"
+      - "--httpListenAddr=:8428"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8428/health"]
+      start_period: 10s
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - monitoring
+
+  victoriatraces:
+    image: victoriametrics/victoria-traces:latest
+    container_name: easyorder-vt
+    ports:
+      - "9428:9428"
+    volumes:
+      - vtdata:/storage
+    command:
+      - "--storageDataPath=/storage"
+      - "--retentionPeriod=30d"
+      - "--httpListenAddr=:9428"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:9428/health"]
+      start_period: 10s
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - monitoring
+
+  victorialogs:
+    image: victoriametrics/victoria-logs:latest
+    container_name: easyorder-vl
+    ports:
+      - "9429:9429"
+    volumes:
+      - vldata:/storage
+    command:
+      - "--storageDataPath=/storage"
+      - "--retentionPeriod=30d"
+      - "--httpListenAddr=:9429"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:9429/health"]
+      start_period: 10s
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - monitoring
+
+volumes:
+  vmdata:
+  vtdata:
+  vldata:
+
+networks:
+  monitoring:
+    driver: bridge
