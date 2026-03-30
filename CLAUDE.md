@@ -5,10 +5,11 @@
 
 ## 规范
 
-- [架构规范](docs/conventions/architecture.md) — 三层架构、依赖注入、schema 分离
-- [Git 规范](docs/conventions/git.md) — 分支命名、提交信息
-- [日志规范](docs/conventions/logging.md) — 结构化日志写法、severity 选用、各层记录要求
-- [可观测性栈](docs/conventions/observability.md) — Docker 栈启动/查询/清理
+根据当前任务读取对应规范文件：
+
+- 涉及 service/repo/api 层划分、依赖注入、schema 设计 → 读取 [架构规范](docs/conventions/architecture.md)
+- 添加或修改 logger 调用 → 读取 [日志规范](docs/conventions/logging.md)
+- 启动 Docker 可观测性栈、查看日志/指标 → 读取 [可观测性栈](docs/conventions/observability.md)
 
 ## 常用命令
 
@@ -28,3 +29,5 @@ uv run semgrep scan --config auto .          # 安全扫描（外部规则集）
 - 修改代码后运行 ruff check 和 pyright 确认无报错
 - 数据库模型变更需要同步更新对应的 schema 和 repository
 - 可观测性栈用完后必须 `docker compose down -v` 清理
+- 提交信息使用中文，Co-Authored-By: GLM 5.1 <noreply@z.ai>
+- 分支命名：feature/xxx（新功能）、fix/xxx（修复）
