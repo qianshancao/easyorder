@@ -23,6 +23,7 @@ dependencies = [
 [dependency-groups]
 dev = [
     "pyright>=1.1.408",
+    "pytest-cov>=6.0.0",
     "pytest>=9.0.2",
     "ruff>=0.15.8",
     "semgrep>=1.156.0",
@@ -39,7 +40,7 @@ select = ["F", "E", "I", "N", "UP", "B", "SIM", "RUF", "S", "DTZ", "T10", "T20",
 max-complexity = 10
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**" = ["S101"]  # 测试中允许 assert
+"tests/**" = ["S101", "S105", "S106", "S107"]  # 测试中允许 assert 和硬编码密码
 "app/api/**" = ["B008"]  # FastAPI Depends() 需要在参数默认值中调用
 
 [tool.pyright]

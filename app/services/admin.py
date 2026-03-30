@@ -9,6 +9,7 @@ from app.services.base import BaseService
 
 logger = logging.getLogger(__name__)
 
+
 def _hash_password(password: str) -> str:
     return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
 
