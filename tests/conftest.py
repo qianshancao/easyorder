@@ -14,10 +14,10 @@ from sqlalchemy.pool import StaticPool
 # so app.database creates an in-memory engine instead of touching the filesystem.
 os.environ.setdefault("EASYORDER_DATABASE_URL", "sqlite:///:memory:")
 
+import app.models  # pyright: ignore[reportUnusedImport] — 注册所有模型到 Base.metadata
 from app.database import get_db
 from app.main import app
 from app.models.base import Base
-from app.models.plan import Plan  # noqa: F401 # pyright: ignore[reportUnusedImport]
 from app.repositories.plan import PlanRepository
 
 

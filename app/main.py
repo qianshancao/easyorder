@@ -5,13 +5,11 @@ from fastapi import FastAPI
 
 from app.api.v1.router import router as v1_router
 from app.database import engine
-from app.models.base import Base
 from app.telemetry import setup_telemetry, shutdown_telemetry
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
-    Base.metadata.create_all(bind=engine)
     setup_telemetry(app, engine)
     yield
     shutdown_telemetry()

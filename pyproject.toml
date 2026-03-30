@@ -5,6 +5,7 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "alembic>=1.18.4",
     "fastapi[standard]>=0.135.2",
     "opentelemetry-exporter-otlp>=1.37.0",
     "opentelemetry-instrumentation-fastapi>=0.58b0",

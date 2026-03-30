@@ -1,23 +1,9 @@
-from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.models.plan import Plan
+from app.repositories.base import BaseRepository
 
 
-class PlanRepository:
+class PlanRepository(BaseRepository[Plan]):
     def __init__(self, db: Session) -> None:
-        self.db = db
-
-    def create(self, plan: Plan) -> Plan:
-        self.db.add(plan)
-        self.db.commit()
-        self.db.refresh(plan)
-        return plan
-
-    def get_by_id(self, plan_id: int) -> Plan | None:
-        stmt = select(Plan).where(Plan.id == plan_id)
-        return self.db.execute(stmt).scalar_one_or_none()
-
-    def list_all(self) -> list[Plan]:
-        stmt = select(Plan).order_by(Plan.id)
-        return list(self.db.execute(stmt).scalars().all())
+        super().__init__(Plan, db)

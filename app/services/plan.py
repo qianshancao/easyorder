@@ -3,13 +3,14 @@ import logging
 from app.models.plan import Plan
 from app.repositories.plan import PlanRepository
 from app.schemas.plan import PlanCreate
+from app.services.base import BaseService
 
 logger = logging.getLogger(__name__)
 
 
-class PlanService:
+class PlanService(BaseService[Plan]):
     def __init__(self, repo: PlanRepository) -> None:
-        self.repo = repo
+        super().__init__(repo, domain_name="plan")
 
     def create_plan(self, data: PlanCreate) -> Plan:
         plan = Plan(
@@ -30,12 +31,7 @@ class PlanService:
         return created
 
     def get_plan(self, plan_id: int) -> Plan | None:
-        plan = self.repo.get_by_id(plan_id)
-        if plan is None:
-            logger.warning("plan.not_found", extra={"plan_id": plan_id})
-        return plan
+        return self.get(plan_id)
 
     def list_plans(self) -> list[Plan]:
-        plans = self.repo.list_all()
-        logger.info("plan.listed", extra={"count": len(plans)})
-        return plans
+        return self.list_all()
