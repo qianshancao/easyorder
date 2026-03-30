@@ -54,7 +54,7 @@ rules:
           def $FUNC(...):
               ...
       - pattern-not-inside: |
-          @router.$METHOD(..., response_model=...)
+          @router.$METHOD(..., response_model=..., ...)
           def $FUNC(...):
               ...
       - pattern: |

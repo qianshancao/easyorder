@@ -26,7 +26,7 @@ class PlanService(BaseService[Plan]):
         created = self.repo.create(plan)
         logger.info(
             "plan.created",
-            extra={"plan_id": created.id, "name": created.name, "cycle": created.cycle},
+            extra={"plan_id": created.id, "plan_name": created.name, "cycle": created.cycle},
         )
         return created
 
