@@ -38,13 +38,14 @@ logger.info(f"plan created: {plan.name}")
 
 | 级别 | 场景 | 示例 |
 |------|------|------|
+| DEBUG | 开发期排查，生产环境通常关闭 | 条件分支路径、查询参数、请求细节 |
 | INFO | 正常业务操作 | 创建、列表、更新 |
 | WARNING | 预期内的异常情况 | 查不到记录、降级处理 |
 | ERROR | 需要关注的失败 | 支付失败、外部服务不可用 |
 
 ## 各层记录要求
 
-- **service** — 必须记录业务事件（创建、状态变更、异常）
-- **repository** — 不记录业务日志，数据库操作由 SQLAlchemy instrumentation 自动追踪
-- **api** — 不记录业务日志，请求由 FastAPI instrumentation 自动追踪
+- **service** — 必须记录业务事件（创建、状态变更、异常）；可用 DEBUG 追踪复杂逻辑的中间状态
+- **repository** — 不记录业务日志，数据库操作由 SQLAlchemy instrumentation 自动追踪；可用 DEBUG 输出查询细节
+- **api** — 不记录业务日志，请求由 FastAPI instrumentation 自动追踪；可用 DEBUG 输出请求/响应细节
 - **telemetry** — 仅记录初始化和关闭

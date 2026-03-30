@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 def setup_telemetry(app: FastAPI, engine: Engine) -> None:
     if not settings.otel_enabled:
-        logger.info("OpenTelemetry disabled")
+        logger.info("telemetry.disabled")
         return
 
     resource = Resource.create()
@@ -54,7 +54,7 @@ def setup_telemetry(app: FastAPI, engine: Engine) -> None:
     SQLAlchemyInstrumentor().instrument(engine=engine)
     FastAPIInstrumentor.instrument_app(app)
 
-    logger.info("OpenTelemetry enabled")
+    logger.info("telemetry.enabled")
 
 
 def shutdown_telemetry() -> None:

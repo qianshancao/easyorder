@@ -1,6 +1,10 @@
+import logging
+
 from app.models.plan import Plan
 from app.repositories.plan import PlanRepository
 from app.schemas.plan import PlanCreate
+
+logger = logging.getLogger(__name__)
 
 
 class PlanService:
@@ -18,10 +22,20 @@ class PlanService:
             features=data.features,
             renewal_rules=data.renewal_rules,
         )
-        return self.repo.create(plan)
+        created = self.repo.create(plan)
+        logger.info(
+            "plan.created",
+            extra={"plan_id": created.id, "name": created.name, "cycle": created.cycle},
+        )
+        return created
 
     def get_plan(self, plan_id: int) -> Plan | None:
-        return self.repo.get_by_id(plan_id)
+        plan = self.repo.get_by_id(plan_id)
+        if plan is None:
+            logger.warning("plan.not_found", extra={"plan_id": plan_id})
+        return plan
 
     def list_plans(self) -> list[Plan]:
-        return self.repo.list_all()
+        plans = self.repo.list_all()
+        logger.info("plan.listed", extra={"count": len(plans)})
+        return plans

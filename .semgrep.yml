@@ -145,3 +145,56 @@ rules:
       - pattern-inside: |
           from app.repositories import $REPO
       - pattern: $REPO(...)
+
+  # ── 日志规范 ──
+
+  # 日志规范：禁止在 logger 消息中使用 f-string，业务数据必须通过 extra 传递
+  - id: logger-no-fstring
+    message: logger 消息禁止使用 f-string，业务数据必须通过 extra={} 传递
+    severity: ERROR
+    languages: [python]
+    pattern-either:
+      - pattern: logger.info(f"...")
+      - pattern: logger.warning(f"...")
+      - pattern: logger.error(f"...")
+      - pattern: logger.debug(f"...")
+
+  # 日志规范：事件名必须使用 {领域}.{动作} 点分格式，禁止包含空格
+  - id: logger-event-name-no-spaces
+    message: 日志事件名禁止包含空格，必须使用 `{领域}.{动作}` 点分格式（如 plan.created）
+    severity: WARNING
+    languages: [python]
+    patterns:
+      - pattern: logger.$METHOD("$MSG", ...)
+      - metavariable-regex:
+          metavariable: $METHOD
+          regex: "^(info|warning|error|debug)$"
+      - metavariable-regex:
+          metavariable: $MSG
+          regex: ".* .*"
+
+  # 日志规范：repository 层禁止记录业务日志
+  - id: repo-no-business-logging
+    message: repository 层禁止记录业务日志，数据库操作由 SQLAlchemy instrumentation 自动追踪
+    severity: ERROR
+    languages: [python]
+    paths:
+      include:
+        - "/app/repositories/**"
+    pattern-either:
+      - pattern: logger.info(...)
+      - pattern: logger.warning(...)
+      - pattern: logger.error(...)
+
+  # 日志规范：api 层禁止记录业务日志
+  - id: api-no-business-logging
+    message: api 层禁止记录业务日志，请求由 FastAPI instrumentation 自动追踪
+    severity: ERROR
+    languages: [python]
+    paths:
+      include:
+        - "/app/api/**"
+    pattern-either:
+      - pattern: logger.info(...)
+      - pattern: logger.warning(...)
+      - pattern: logger.error(...)
