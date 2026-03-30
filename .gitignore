@@ -11,3 +11,6 @@ wheels/
 .venv
 .env
 data/
+
+# Test/coverage
+.coverage
