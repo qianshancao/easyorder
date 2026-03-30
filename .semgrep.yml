@@ -118,6 +118,51 @@ rules:
       - pattern: import app.schemas
       - pattern: from app.schemas import $X
 
+  # 架构约束：repositories 层内部禁止互相依赖（base.py 除外）
+  - id: repo-no-cross-import
+    message: repository 层禁止互相依赖，仅允许从 base.py 导入
+    severity: ERROR
+    languages: [python]
+    paths:
+      include:
+        - "/app/repositories/**"
+      exclude:
+        - "/app/repositories/base.py"
+        - "/app/repositories/__init__.py"
+    patterns:
+      - pattern: from app.repositories.$MODULE import $X
+      - pattern-not: from app.repositories.base import $X
+
+  # 架构约束：services 层内部禁止互相依赖（base.py 除外）
+  - id: service-no-cross-import
+    message: service 层禁止互相依赖，仅允许从 base.py 导入
+    severity: ERROR
+    languages: [python]
+    paths:
+      include:
+        - "/app/services/**"
+      exclude:
+        - "/app/services/base.py"
+        - "/app/services/__init__.py"
+    patterns:
+      - pattern: from app.services.$MODULE import $X
+      - pattern-not: from app.services.base import $X
+
+  # 架构约束：models 层内部禁止互相依赖（base.py 除外）
+  - id: model-no-cross-import
+    message: model 层禁止互相依赖，仅允许从 base.py 导入
+    severity: ERROR
+    languages: [python]
+    paths:
+      include:
+        - "/app/models/**"
+      exclude:
+        - "/app/models/base.py"
+        - "/app/models/__init__.py"
+    patterns:
+      - pattern: from app.models.$MODULE import $X
+      - pattern-not: from app.models.base import $X
+
   # 依赖注入约束：api 层禁止直接实例化 service，必须通过 Depends() 注入
   - id: api-no-direct-service-instantiation
     message: api 层禁止直接实例化 service，必须通过 Depends() 依赖注入
