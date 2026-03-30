@@ -3,20 +3,12 @@
 自托管订阅管理系统，FastAPI 三层架构，Python 3.12+，使用 uv 管理依赖。
 业务需求见 @docs/requirements.md。
 
-## 项目结构
+## 规范
 
-```
-app/
-├── api/             # 表现层：路由、请求/响应
-│   └── v1/          # API v1 版本
-├── schemas/         # Pydantic 请求/响应模型
-├── services/        # 业务逻辑层
-├── models/          # 数据访问层：ORM 模型
-├── repositories/    # 数据访问层：查询封装
-├── config.py        # 配置管理
-├── database.py      # 数据库连接
-└── main.py          # FastAPI 应用入口
-```
+- [架构规范](docs/conventions/architecture.md) — 三层架构、依赖注入、schema 分离
+- [Git 规范](docs/conventions/git.md) — 分支命名、提交信息
+- [日志规范](docs/conventions/logging.md) — 结构化日志写法、severity 选用、各层记录要求
+- [可观测性栈](docs/conventions/observability.md) — Docker 栈启动/查询/清理
 
 ## 常用命令
 
@@ -30,36 +22,6 @@ uv run ruff format .             # 格式化
 uv run semgrep scan --config .semgrep.yml .  # 架构与兼容性扫描
 uv run semgrep scan --config auto .          # 安全扫描（外部规则集）
 ```
-
-## 开发规范
-
-### 架构
-
-- 三层架构：api → services → repositories → models
-- 严禁反向依赖和跨层调用
-- 必须使用依赖注入：api 通过 Depends() 注入 service，service 通过构造函数注入 repository
-- Pydantic schema 与 ORM model 分离
-
-### Git
-
-- 分支命名：`feature/xxx`、`fix/xxx`
-- 提交信息使用中文
-- Co-Authored-By: GLM 5.1 <noreply@z.ai>
-
-## 可观测性栈
-
-验证运行行为、复现 bug 时使用。用完必须清理。
-
-```bash
-docker compose up -d                   # 启动 OTEL Collector + VictoriaMetrics + VictoriaTraces + VictoriaLogs
-docker compose down -v                 # 清理（含数据卷）
-```
-
-App 通过 OTEL SDK 向 `localhost:4317`（gRPC）/ `localhost:4318`（HTTP）发送遥测数据，查询 API：
-
-- Metrics: `curl 'localhost:8428/api/v1/query?query=...'`
-- Traces: `curl 'localhost:9428/api/traces...'`
-- Logs: `curl 'localhost:9429/select/logsql/query?query=...'`
 
 ## IMPORTANT
 
