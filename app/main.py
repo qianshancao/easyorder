@@ -23,10 +23,10 @@ def _ensure_super_admin() -> None:
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     _ensure_super_admin()
-    setup_telemetry(app, engine)
     yield
     shutdown_telemetry()
 
 
 app = FastAPI(title="EasyOrder", version="0.1.0", lifespan=lifespan)
+setup_telemetry(app, engine)
 app.include_router(v1_router, prefix="/api")

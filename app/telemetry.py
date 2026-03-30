@@ -53,10 +53,6 @@ def setup_telemetry(app: FastAPI, engine: Engine) -> None:
     # Instrumentation
     SQLAlchemyInstrumentor().instrument(engine=engine)
     FastAPIInstrumentor.instrument_app(app)
-    # Force rebuild the middleware stack so the OTEL middleware takes effect.
-    # Without this, instrument_app only patches build_middleware_stack(),
-    # but the stack was already cached before the lifespan ran.
-    app.middleware_stack = app.build_middleware_stack()
 
     logger.info("telemetry.enabled")
 
