@@ -24,6 +24,13 @@ uv run semgrep scan --config .semgrep.yml .  # 架构与兼容性扫描
 uv run semgrep scan --config auto .          # 安全扫描（外部规则集）
 ```
 
+## 开发流程
+
+1. **先设计后开发** — 实现前先出方案，确认思路再动手
+2. **TDD 驱动** — 先写测试（失败），再写实现（通过），最后重构
+3. **小步迭代，快速验证** — 每完成一个小步骤就运行测试确认，不要攒一大堆再验证
+4. **可观测性验证** — 实现完成后启动 victoria-observe 栈，调用 API 验证 traces 和 logs 符合日志规范
+
 ## IMPORTANT
 
 - 修改代码后运行 ruff check 和 pyright 确认无报错
