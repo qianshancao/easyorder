@@ -1,4 +1,13 @@
+from typing import NotRequired, TypedDict
+
 from pydantic import BaseModel
+
+
+class TokenPayload(TypedDict):
+    sub: str
+    type: str
+    exp: int
+    role: NotRequired[str]
 
 
 class TokenResponse(BaseModel):

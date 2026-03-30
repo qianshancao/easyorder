@@ -1,12 +1,10 @@
 from collections.abc import Generator
 from typing import Annotated
 
-import jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 
-from app.config import settings
 from app.database import get_db
 from app.models.admin import Admin
 from app.models.oauth_client import OAuthClient
@@ -14,6 +12,7 @@ from app.repositories.admin import AdminRepository
 from app.repositories.oauth_client import OAuthClientRepository
 from app.repositories.plan import PlanRepository
 from app.repositories.system_config import SystemConfigRepository
+from app.schemas.auth import TokenPayload
 from app.services.admin import AdminService
 from app.services.auth import AuthService
 from app.services.oauth_client import OAuthClientService
@@ -53,15 +52,23 @@ def get_oauth_client_service(db: Session = Depends(get_db)) -> Generator[OAuthCl
 # ── 认证依赖 ──
 
 
-def _get_current_admin(token: str = Depends(_oauth2_scheme)) -> Admin:
-    try:
-        payload = jwt.decode(token, settings.secret_key, algorithms=["HS256"])
-    except jwt.InvalidTokenError:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="无效的认证令牌") from None
-    if payload.get("type") != "admin":
+def _verify_token_payload(
+    token: str = Depends(_oauth2_scheme),
+    auth_service: AuthService = Depends(get_auth_service),
+) -> TokenPayload:
+    payload = auth_service.verify_token(token)
+    if payload is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="无效的认证令牌")
+    return payload
+
+
+def _get_current_admin(
+    payload: TokenPayload = Depends(_verify_token_payload),
+    db: Session = Depends(get_db),
+) -> Admin:
+    if payload["type"] != "admin":
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="无效的令牌类型")
-    admin_id = int(payload["sub"])  # type: ignore[arg-type]
-    db = next(get_db())
+    admin_id = int(payload["sub"])
     admin = AdminRepository(db).get_by_id(admin_id)
     if admin is None or admin.status != "active":
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="用户不存在或已禁用")
@@ -74,15 +81,13 @@ def _require_super_admin(admin: Admin = Depends(_get_current_admin)) -> Admin:
     return admin
 
 
-def _get_current_api_client(token: str = Depends(_oauth2_scheme)) -> OAuthClient:
-    try:
-        payload = jwt.decode(token, settings.secret_key, algorithms=["HS256"])
-    except jwt.InvalidTokenError:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="无效的认证令牌") from None
-    if payload.get("type") != "api":
+def _get_current_api_client(
+    payload: TokenPayload = Depends(_verify_token_payload),
+    db: Session = Depends(get_db),
+) -> OAuthClient:
+    if payload["type"] != "api":
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="无效的令牌类型")
-    client_id = str(payload["sub"])
-    db = next(get_db())
+    client_id = payload["sub"]
     client = OAuthClientRepository(db).get_by_client_id(client_id)
     if client is None or client.status != "active":
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="客户端不存在或已禁用")

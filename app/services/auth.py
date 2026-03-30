@@ -9,6 +9,7 @@ from app.models.admin import Admin
 from app.models.oauth_client import OAuthClient
 from app.repositories.admin import AdminRepository
 from app.repositories.oauth_client import OAuthClientRepository
+from app.schemas.auth import TokenPayload
 
 logger = logging.getLogger(__name__)
 
@@ -38,9 +39,12 @@ class AuthService:
         token = jwt.encode(payload, settings.secret_key, algorithm="HS256")
         return token, settings.api_token_expire_seconds
 
-    def verify_token(self, token: str) -> dict[str, object] | None:
+    def verify_token(self, token: str) -> TokenPayload | None:
         try:
-            return jwt.decode(token, settings.secret_key, algorithms=["HS256"])
+            payload: TokenPayload = jwt.decode(  # type: ignore[assignment]
+                token, settings.secret_key, algorithms=["HS256"]
+            )
+            return payload
         except jwt.ExpiredSignatureError:
             logger.info("auth.token_expired")
             return None
@@ -52,14 +56,14 @@ class AuthService:
         payload = self.verify_token(token)
         if payload is None or payload.get("type") != "admin":
             return None
-        admin_id = int(payload["sub"])  # type: ignore[arg-type]
+        admin_id = int(payload["sub"])
         return self.admin_repo.get_by_id(admin_id)
 
     def get_api_client_by_token(self, token: str) -> OAuthClient | None:
         payload = self.verify_token(token)
         if payload is None or payload.get("type") != "api":
             return None
-        client_id = str(payload["sub"])
+        client_id = payload["sub"]
         return self.oauth_client_repo.get_by_client_id(client_id)
 
     def authenticate_admin(self, username: str, password: str) -> Admin | None:
