@@ -33,6 +33,8 @@ uv run semgrep scan --config auto .          # 安全扫描（外部规则集）
 
 ## IMPORTANT
 
+- 禁止使用 Heredocs（`cat <<EOF`）创建新文件，必须使用 Write 工具
+- 禁止使用 `sed` 批量修改文件，必须使用 Edit 工具
 - 修改代码后运行 ruff check 和 pyright 确认无报错
 - 数据库模型变更需要同步更新对应的 schema 和 repository
 - 可观测性栈用完后必须 `docker compose down -v` 清理

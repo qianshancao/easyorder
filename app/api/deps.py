@@ -11,12 +11,14 @@ from app.models.oauth_client import OAuthClient
 from app.repositories.admin import AdminRepository
 from app.repositories.oauth_client import OAuthClientRepository
 from app.repositories.plan import PlanRepository
+from app.repositories.subscription import SubscriptionRepository
 from app.repositories.system_config import SystemConfigRepository
 from app.schemas.auth import TokenPayload
 from app.services.admin import AdminService
 from app.services.auth import AuthService
 from app.services.oauth_client import OAuthClientService
 from app.services.plan import PlanService
+from app.services.subscription import SubscriptionService
 from app.services.system_config import SystemConfigService
 
 _oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
@@ -47,6 +49,10 @@ def get_system_config_service(db: Session = Depends(get_db)) -> Generator[System
 def get_oauth_client_service(db: Session = Depends(get_db)) -> Generator[OAuthClientService, None, None]:
     repo = OAuthClientRepository(db)
     yield OAuthClientService(repo=repo)
+
+
+def get_subscription_service(db: Session = Depends(get_db)) -> Generator[SubscriptionService, None, None]:
+    yield SubscriptionService(SubscriptionRepository(db), PlanRepository(db))
 
 
 # ── 认证依赖 ──
