@@ -24,6 +24,7 @@ from app.services.order import OrderService
 from app.services.payment_attempt import PaymentAttemptService
 from app.services.plan import PlanService
 from app.services.refund import RefundService
+from app.services.renewal import RenewalService
 from app.services.subscription import SubscriptionService
 from app.services.system_config import SystemConfigService
 
@@ -71,6 +72,10 @@ def get_payment_attempt_service(db: Session = Depends(get_db)) -> Generator[Paym
 
 def get_refund_service(db: Session = Depends(get_db)) -> Generator[RefundService, None, None]:
     yield RefundService(RefundRepository(db), OrderRepository(db))
+
+
+def get_renewal_service(db: Session = Depends(get_db)) -> Generator[RenewalService, None, None]:
+    yield RenewalService(SubscriptionRepository(db), OrderRepository(db), PaymentAttemptRepository(db))
 
 
 # ── 认证依赖 ──
