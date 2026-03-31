@@ -5,6 +5,7 @@ from unittest.mock import MagicMock
 
 from app.models.admin import Admin
 from app.models.order import Order
+from app.models.refund import Refund
 from app.models.subscription import Subscription
 from app.services.admin import _hash_password
 
@@ -57,6 +58,25 @@ def _make_subscription_mock(**overrides) -> MagicMock:
     }
     defaults.update(overrides)
     mock = MagicMock(spec=Subscription)
+    for k, v in defaults.items():
+        setattr(mock, k, v)
+    return mock
+
+
+def _make_refund_mock(**overrides) -> MagicMock:
+    defaults = {
+        "id": 1,
+        "order_id": 1,
+        "amount": 3000,
+        "reason": "用户申请退款",
+        "status": "pending",
+        "channel": "alipay",
+        "channel_refund_id": None,
+        "completed_at": None,
+        "created_at": datetime.now(tz=UTC),
+    }
+    defaults.update(overrides)
+    mock = MagicMock(spec=Refund)
     for k, v in defaults.items():
         setattr(mock, k, v)
     return mock

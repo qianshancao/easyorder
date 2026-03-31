@@ -13,6 +13,7 @@ from app.repositories.oauth_client import OAuthClientRepository
 from app.repositories.order import OrderRepository
 from app.repositories.payment_attempt import PaymentAttemptRepository
 from app.repositories.plan import PlanRepository
+from app.repositories.refund import RefundRepository
 from app.repositories.subscription import SubscriptionRepository
 from app.repositories.system_config import SystemConfigRepository
 from app.schemas.auth import TokenPayload
@@ -22,6 +23,7 @@ from app.services.oauth_client import OAuthClientService
 from app.services.order import OrderService
 from app.services.payment_attempt import PaymentAttemptService
 from app.services.plan import PlanService
+from app.services.refund import RefundService
 from app.services.subscription import SubscriptionService
 from app.services.system_config import SystemConfigService
 
@@ -65,6 +67,10 @@ def get_order_service(db: Session = Depends(get_db)) -> Generator[OrderService, 
 
 def get_payment_attempt_service(db: Session = Depends(get_db)) -> Generator[PaymentAttemptService, None, None]:
     yield PaymentAttemptService(PaymentAttemptRepository(db), OrderRepository(db))
+
+
+def get_refund_service(db: Session = Depends(get_db)) -> Generator[RefundService, None, None]:
+    yield RefundService(RefundRepository(db), OrderRepository(db))
 
 
 # ── 认证依赖 ──
