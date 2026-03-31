@@ -10,6 +10,7 @@ from app.models.admin import Admin
 from app.models.oauth_client import OAuthClient
 from app.repositories.admin import AdminRepository
 from app.repositories.oauth_client import OAuthClientRepository
+from app.repositories.order import OrderRepository
 from app.repositories.plan import PlanRepository
 from app.repositories.subscription import SubscriptionRepository
 from app.repositories.system_config import SystemConfigRepository
@@ -17,6 +18,7 @@ from app.schemas.auth import TokenPayload
 from app.services.admin import AdminService
 from app.services.auth import AuthService
 from app.services.oauth_client import OAuthClientService
+from app.services.order import OrderService
 from app.services.plan import PlanService
 from app.services.subscription import SubscriptionService
 from app.services.system_config import SystemConfigService
@@ -53,6 +55,10 @@ def get_oauth_client_service(db: Session = Depends(get_db)) -> Generator[OAuthCl
 
 def get_subscription_service(db: Session = Depends(get_db)) -> Generator[SubscriptionService, None, None]:
     yield SubscriptionService(SubscriptionRepository(db), PlanRepository(db))
+
+
+def get_order_service(db: Session = Depends(get_db)) -> Generator[OrderService, None, None]:
+    yield OrderService(OrderRepository(db), SubscriptionRepository(db))
 
 
 # ── 认证依赖 ──

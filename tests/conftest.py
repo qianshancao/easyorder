@@ -23,6 +23,7 @@ from app.models.base import Base
 from app.models.oauth_client import OAuthClient
 from app.repositories.admin import AdminRepository
 from app.repositories.oauth_client import OAuthClientRepository
+from app.repositories.order import OrderRepository
 from app.repositories.plan import PlanRepository
 from app.repositories.subscription import SubscriptionRepository
 from app.repositories.system_config import SystemConfigRepository
@@ -98,6 +99,12 @@ def subscription_repository(db_session: Session) -> SubscriptionRepository:
     return SubscriptionRepository(db_session)
 
 
+@pytest.fixture()
+def order_repository(db_session: Session) -> OrderRepository:
+    """OrderRepository backed by the test database."""
+    return OrderRepository(db_session)
+
+
 # ── Mock repository fixtures (service layer) ──
 
 
@@ -129,6 +136,12 @@ def mock_system_config_repository() -> MagicMock:
 def mock_subscription_repository() -> MagicMock:
     """Mocked SubscriptionRepository for service layer tests."""
     return MagicMock(spec=SubscriptionRepository)
+
+
+@pytest.fixture()
+def mock_order_repository() -> MagicMock:
+    """Mocked OrderRepository for service layer tests."""
+    return MagicMock(spec=OrderRepository)
 
 
 # ── Auth token header fixtures (API layer) ──
