@@ -1,7 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.api.deps import CurrentAdmin, CurrentApiClient, get_subscription_service
-from app.schemas.subscription import SubscriptionCreate, SubscriptionResponse
+from app.schemas.order import OrderResponse
+from app.schemas.subscription import (
+    SubscriptionChangeRequest,
+    SubscriptionChangeResponse,
+    SubscriptionCreate,
+    SubscriptionResponse,
+)
 from app.services.subscription import SubscriptionService
 
 router = APIRouter(prefix="/subscriptions", tags=["订阅"])
@@ -103,3 +109,39 @@ def cancel_subscription(
     service: SubscriptionService = Depends(get_subscription_service),
 ) -> SubscriptionResponse:
     return _call_or_raise(service.cancel_subscription, subscription_id)
+
+
+@router.post("/{subscription_id}/upgrade", response_model=SubscriptionChangeResponse)
+def upgrade_subscription(
+    subscription_id: int,
+    data: SubscriptionChangeRequest,
+    _client: CurrentApiClient,
+    service: SubscriptionService = Depends(get_subscription_service),
+) -> SubscriptionChangeResponse:
+    try:
+        sub, order = service.upgrade_subscription(subscription_id, data.new_plan_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc)) from exc
+    return SubscriptionChangeResponse(
+        subscription=SubscriptionResponse.model_validate(sub),
+        order=OrderResponse.model_validate(order),
+        proration_amount=order.amount,
+    )
+
+
+@router.post("/{subscription_id}/downgrade", response_model=SubscriptionChangeResponse)
+def downgrade_subscription(
+    subscription_id: int,
+    data: SubscriptionChangeRequest,
+    _client: CurrentApiClient,
+    service: SubscriptionService = Depends(get_subscription_service),
+) -> SubscriptionChangeResponse:
+    try:
+        sub, order = service.downgrade_subscription(subscription_id, data.new_plan_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc)) from exc
+    return SubscriptionChangeResponse(
+        subscription=SubscriptionResponse.model_validate(sub),
+        order=OrderResponse.model_validate(order),
+        proration_amount=order.amount,
+    )

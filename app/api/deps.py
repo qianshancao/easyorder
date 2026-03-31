@@ -23,6 +23,7 @@ from app.services.oauth_client import OAuthClientService
 from app.services.order import OrderService
 from app.services.payment_attempt import PaymentAttemptService
 from app.services.plan import PlanService
+from app.services.proration import ProrationService
 from app.services.refund import RefundService
 from app.services.renewal import RenewalService
 from app.services.subscription import SubscriptionService
@@ -59,7 +60,12 @@ def get_oauth_client_service(db: Session = Depends(get_db)) -> Generator[OAuthCl
 
 
 def get_subscription_service(db: Session = Depends(get_db)) -> Generator[SubscriptionService, None, None]:
-    yield SubscriptionService(SubscriptionRepository(db), PlanRepository(db))
+    yield SubscriptionService(
+        SubscriptionRepository(db),
+        PlanRepository(db),
+        ProrationService(),
+        OrderRepository(db),
+    )
 
 
 def get_order_service(db: Session = Depends(get_db)) -> Generator[OrderService, None, None]:

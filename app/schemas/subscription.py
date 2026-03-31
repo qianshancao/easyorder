@@ -2,6 +2,8 @@ from datetime import datetime
 
 from pydantic import BaseModel
 
+from app.schemas.order import OrderResponse
+
 
 class SubscriptionCreate(BaseModel):
     external_user_id: str
@@ -20,3 +22,13 @@ class SubscriptionResponse(BaseModel):
     created_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+class SubscriptionChangeRequest(BaseModel):
+    new_plan_id: int
+
+
+class SubscriptionChangeResponse(BaseModel):
+    subscription: SubscriptionResponse
+    order: OrderResponse
+    proration_amount: int

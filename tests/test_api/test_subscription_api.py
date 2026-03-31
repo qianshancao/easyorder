@@ -1,5 +1,6 @@
 """Tests for Subscription API endpoints using TestClient with a test database."""
 
+
 from fastapi.testclient import TestClient
 
 
@@ -264,3 +265,172 @@ class TestAdminReactivateSubscription:
         resp = client.post("/api/v1/subscriptions/admin/99999/reactivate", headers=admin_token_headers)
 
         assert resp.status_code == 404
+
+
+class TestUpgradeSubscription:
+    """Tests for POST /api/v1/subscriptions/{id}/upgrade."""
+
+    def test_upgrade_success(
+        self,
+        client: TestClient,
+        api_client_token_headers: dict[str, str],
+        super_admin_token_headers: dict[str, str],
+    ) -> None:
+        """测试升级订阅 API。"""
+        # 创建两个套餐
+        plan_basic = _create_plan(client, super_admin_token_headers, name="Basic", base_price=3000)
+        plan_pro = _create_plan(client, super_admin_token_headers, name="Pro", base_price=5000)
+
+        # 创建活跃订阅（剩余 15 天）
+        create_resp = client.post(
+            "/api/v1/subscriptions/",
+            json={"external_user_id": "user_001", "plan_id": plan_basic["id"]},
+            headers=api_client_token_headers,
+        )
+        sub_id = create_resp.json()["id"]
+
+        resp = client.post(
+            f"/api/v1/subscriptions/{sub_id}/upgrade",
+            json={"new_plan_id": plan_pro["id"]},
+            headers=api_client_token_headers,
+        )
+
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["subscription"]["id"] == sub_id
+        assert data["subscription"]["plan_id"] == plan_pro["id"]
+        assert data["order"]["type"] == "upgrade"
+        assert data["proration_amount"] > 0
+
+    def test_upgrade_subscription_not_found(
+        self, client: TestClient, api_client_token_headers: dict[str, str]
+    ) -> None:
+        """升级不存在的订阅。"""
+        resp = client.post(
+            "/api/v1/subscriptions/99999/upgrade",
+            json={"new_plan_id": 1},
+            headers=api_client_token_headers,
+        )
+
+        assert resp.status_code == 422
+        assert "not found" in resp.json()["detail"]
+
+    def test_upgrade_plan_not_found(
+        self,
+        client: TestClient,
+        api_client_token_headers: dict[str, str],
+        super_admin_token_headers: dict[str, str],
+    ) -> None:
+        """升级到不存在的套餐。"""
+        plan = _create_plan(client, super_admin_token_headers)
+        create_resp = client.post(
+            "/api/v1/subscriptions/",
+            json={"external_user_id": "user_001", "plan_id": plan["id"]},
+            headers=api_client_token_headers,
+        )
+        sub_id = create_resp.json()["id"]
+
+        resp = client.post(
+            f"/api/v1/subscriptions/{sub_id}/upgrade",
+            json={"new_plan_id": 99999},
+            headers=api_client_token_headers,
+        )
+
+        assert resp.status_code == 422
+
+    def test_upgrade_requires_auth(
+        self, client: TestClient, super_admin_token_headers: dict[str, str]
+    ) -> None:
+        """升级需要认证。"""
+        plan = _create_plan(client, super_admin_token_headers)
+        resp = client.post(
+            "/api/v1/subscriptions/1/upgrade",
+            json={"new_plan_id": plan["id"]},
+        )
+
+        assert resp.status_code == 401
+
+
+class TestDowngradeSubscription:
+    """Tests for POST /api/v1/subscriptions/{id}/downgrade."""
+
+    def test_downgrade_success(
+        self,
+        client: TestClient,
+        api_client_token_headers: dict[str, str],
+        super_admin_token_headers: dict[str, str],
+    ) -> None:
+        """测试降级订阅 API。"""
+        # 创建两个套餐
+        plan_basic = _create_plan(client, super_admin_token_headers, name="Basic", base_price=3000)
+        plan_pro = _create_plan(client, super_admin_token_headers, name="Pro", base_price=5000)
+
+        # 创建 Pro 订阅
+        create_resp = client.post(
+            "/api/v1/subscriptions/",
+            json={"external_user_id": "user_001", "plan_id": plan_pro["id"]},
+            headers=api_client_token_headers,
+        )
+        sub_id = create_resp.json()["id"]
+
+        resp = client.post(
+            f"/api/v1/subscriptions/{sub_id}/downgrade",
+            json={"new_plan_id": plan_basic["id"]},
+            headers=api_client_token_headers,
+        )
+
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["subscription"]["id"] == sub_id
+        assert data["subscription"]["plan_id"] == plan_basic["id"]
+        assert data["order"]["type"] == "downgrade"
+        # 降级不收钱
+        assert data["proration_amount"] == 0
+
+    def test_downgrade_subscription_not_found(
+        self, client: TestClient, api_client_token_headers: dict[str, str]
+    ) -> None:
+        """降级不存在的订阅。"""
+        resp = client.post(
+            "/api/v1/subscriptions/99999/downgrade",
+            json={"new_plan_id": 1},
+            headers=api_client_token_headers,
+        )
+
+        assert resp.status_code == 422
+        assert "not found" in resp.json()["detail"]
+
+    def test_downgrade_plan_not_found(
+        self,
+        client: TestClient,
+        api_client_token_headers: dict[str, str],
+        super_admin_token_headers: dict[str, str],
+    ) -> None:
+        """降级到不存在的套餐。"""
+        plan = _create_plan(client, super_admin_token_headers)
+        create_resp = client.post(
+            "/api/v1/subscriptions/",
+            json={"external_user_id": "user_001", "plan_id": plan["id"]},
+            headers=api_client_token_headers,
+        )
+        sub_id = create_resp.json()["id"]
+
+        resp = client.post(
+            f"/api/v1/subscriptions/{sub_id}/downgrade",
+            json={"new_plan_id": 99999},
+            headers=api_client_token_headers,
+        )
+
+        assert resp.status_code == 422
+
+    def test_downgrade_requires_auth(
+        self, client: TestClient, super_admin_token_headers: dict[str, str]
+    ) -> None:
+        """降级需要认证。"""
+        plan = _create_plan(client, super_admin_token_headers)
+        resp = client.post(
+            "/api/v1/subscriptions/1/downgrade",
+            json={"new_plan_id": plan["id"]},
+        )
+
+        assert resp.status_code == 401
