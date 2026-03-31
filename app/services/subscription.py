@@ -72,7 +72,7 @@ class SubscriptionService(BaseService[Subscription]):
 
     def list_by_external_user_id(self, external_user_id: str) -> list[Subscription]:
         results = self.repo.get_by_external_user_id(external_user_id)
-        self.logger.info(
+        logger.info(
             "subscription.listed_by_user",
             extra={"external_user_id": external_user_id, "count": len(results)},
         )
@@ -99,8 +99,7 @@ class SubscriptionService(BaseService[Subscription]):
         subscription = self.repo.get_by_id(subscription_id)
         if subscription is None:
             return None
-        if subscription.status != "past_due":
-            raise ValueError(f"Cannot reactivate from status: {subscription.status}")
+        self._validate_transition(subscription.status, "active")
         subscription.status = "active"
         subscription.canceled_at = None
         cycle_days = CYCLE_DURATION_DAYS.get(str(subscription.plan_snapshot.get("cycle", "monthly")), 30)

@@ -226,7 +226,7 @@ class TestAdminReactivateSubscription:
         resp = client.post(f"/api/v1/subscriptions/admin/{sub_id}/reactivate", headers=admin_token_headers)
 
         assert resp.status_code == 422
-        assert "Cannot reactivate" in resp.json()["detail"]
+        assert "Invalid status transition" in resp.json()["detail"]
 
     def test_reactivate_not_found(self, client: TestClient, admin_token_headers: dict[str, str]) -> None:
         resp = client.post("/api/v1/subscriptions/admin/99999/reactivate", headers=admin_token_headers)

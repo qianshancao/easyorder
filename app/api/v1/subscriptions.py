@@ -7,6 +7,17 @@ from app.services.subscription import SubscriptionService
 router = APIRouter(prefix="/subscriptions", tags=["订阅"])
 
 
+def _call_or_raise(service_fn, subscription_id: int) -> SubscriptionResponse:
+    """Call a mutating service method, translating ValueError/None to HTTP errors."""
+    try:
+        sub = service_fn(subscription_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc)) from exc
+    if sub is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="订阅不存在")
+    return SubscriptionResponse.model_validate(sub)
+
+
 # ── 管理 API (Admin 认证) ── 放在 /{id} 通配符前面
 
 
@@ -36,13 +47,7 @@ def admin_cancel_subscription(
     _admin: CurrentAdmin,
     service: SubscriptionService = Depends(get_subscription_service),
 ) -> SubscriptionResponse:
-    try:
-        sub = service.cancel_subscription(subscription_id)
-    except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc)) from exc
-    if sub is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="订阅不存在")
-    return SubscriptionResponse.model_validate(sub)
+    return _call_or_raise(service.cancel_subscription, subscription_id)
 
 
 @router.post("/admin/{subscription_id}/reactivate", response_model=SubscriptionResponse)
@@ -51,13 +56,7 @@ def admin_reactivate_subscription(
     _admin: CurrentAdmin,
     service: SubscriptionService = Depends(get_subscription_service),
 ) -> SubscriptionResponse:
-    try:
-        sub = service.reactivate_subscription(subscription_id)
-    except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc)) from exc
-    if sub is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="订阅不存在")
-    return SubscriptionResponse.model_validate(sub)
+    return _call_or_raise(service.reactivate_subscription, subscription_id)
 
 
 # ── 业务 API (OAuth 客户端认证) ──
@@ -103,10 +102,4 @@ def cancel_subscription(
     _client: CurrentApiClient,
     service: SubscriptionService = Depends(get_subscription_service),
 ) -> SubscriptionResponse:
-    try:
-        sub = service.cancel_subscription(subscription_id)
-    except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc)) from exc
-    if sub is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="订阅不存在")
-    return SubscriptionResponse.model_validate(sub)
+    return _call_or_raise(service.cancel_subscription, subscription_id)

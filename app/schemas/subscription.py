@@ -8,10 +8,6 @@ class SubscriptionCreate(BaseModel):
     plan_id: int
 
 
-class SubscriptionCancel(BaseModel):
-    pass
-
-
 class SubscriptionResponse(BaseModel):
     id: int
     external_user_id: str

@@ -3,10 +3,12 @@
 from datetime import UTC, datetime, timedelta
 from unittest.mock import MagicMock
 
+import pytest
+
 from app.models.plan import Plan
 from app.models.subscription import Subscription
 from app.schemas.subscription import SubscriptionCreate
-from app.services.subscription import CYCLE_DURATION_DAYS
+from app.services.subscription import CYCLE_DURATION_DAYS, SubscriptionService
 
 
 def _make_plan_mock(**overrides) -> MagicMock:
@@ -48,8 +50,6 @@ def _make_subscription_mock(**overrides) -> MagicMock:
 
 class TestCreateSubscription:
     def test_with_trial(self, mock_subscription_repository, mock_plan_repository) -> None:
-        from app.services.subscription import SubscriptionService
-
         plan = _make_plan_mock(trial_duration=7)
         mock_plan_repository.get_by_id.return_value = plan
         mock_subscription_repository.create.side_effect = lambda e: e
@@ -64,8 +64,6 @@ class TestCreateSubscription:
         assert result.plan_snapshot["features"] == {"projects": 20}
 
     def test_without_trial(self, mock_subscription_repository, mock_plan_repository) -> None:
-        from app.services.subscription import SubscriptionService
-
         plan = _make_plan_mock()
         mock_plan_repository.get_by_id.return_value = plan
         mock_subscription_repository.create.side_effect = lambda e: e
@@ -78,19 +76,13 @@ class TestCreateSubscription:
         assert abs((result.current_period_end - expected_end).total_seconds()) < 5
 
     def test_plan_not_found_raises(self, mock_subscription_repository, mock_plan_repository) -> None:
-        from app.services.subscription import SubscriptionService
-
         mock_plan_repository.get_by_id.return_value = None
         service = SubscriptionService(mock_subscription_repository, mock_plan_repository)
-
-        import pytest
 
         with pytest.raises(ValueError, match="not found"):
             service.create_subscription(SubscriptionCreate(external_user_id="user_001", plan_id=999))
 
     def test_snapshot_includes_all_pricing_fields(self, mock_subscription_repository, mock_plan_repository) -> None:
-        from app.services.subscription import SubscriptionService
-
         plan = _make_plan_mock(introductory_price=1000, trial_price=0, trial_duration=7, features={"storage": "10GB"})
         mock_plan_repository.get_by_id.return_value = plan
         mock_subscription_repository.create.side_effect = lambda e: e
@@ -108,8 +100,6 @@ class TestCreateSubscription:
 
 class TestGetSubscription:
     def test_found(self, mock_subscription_repository, mock_plan_repository) -> None:
-        from app.services.subscription import SubscriptionService
-
         sub = _make_subscription_mock()
         mock_subscription_repository.get_by_id.return_value = sub
         service = SubscriptionService(mock_subscription_repository, mock_plan_repository)
@@ -118,8 +108,6 @@ class TestGetSubscription:
         assert result is sub
 
     def test_not_found(self, mock_subscription_repository, mock_plan_repository) -> None:
-        from app.services.subscription import SubscriptionService
-
         mock_subscription_repository.get_by_id.return_value = None
         service = SubscriptionService(mock_subscription_repository, mock_plan_repository)
 
@@ -129,8 +117,6 @@ class TestGetSubscription:
 
 class TestListByExternalUserId:
     def test_returns_results(self, mock_subscription_repository, mock_plan_repository) -> None:
-        from app.services.subscription import SubscriptionService
-
         subs = [_make_subscription_mock(), _make_subscription_mock(id=2)]
         mock_subscription_repository.get_by_external_user_id.return_value = subs
         service = SubscriptionService(mock_subscription_repository, mock_plan_repository)
@@ -139,8 +125,6 @@ class TestListByExternalUserId:
         assert len(result) == 2
 
     def test_empty(self, mock_subscription_repository, mock_plan_repository) -> None:
-        from app.services.subscription import SubscriptionService
-
         mock_subscription_repository.get_by_external_user_id.return_value = []
         service = SubscriptionService(mock_subscription_repository, mock_plan_repository)
 
@@ -150,8 +134,6 @@ class TestListByExternalUserId:
 
 class TestCancelSubscription:
     def test_success_from_active(self, mock_subscription_repository, mock_plan_repository) -> None:
-        from app.services.subscription import SubscriptionService
-
         sub = _make_subscription_mock(status="active")
         mock_subscription_repository.get_by_id.return_value = sub
         mock_subscription_repository.update.side_effect = lambda e: e
@@ -162,8 +144,6 @@ class TestCancelSubscription:
         assert result.canceled_at is not None
 
     def test_success_from_past_due(self, mock_subscription_repository, mock_plan_repository) -> None:
-        from app.services.subscription import SubscriptionService
-
         sub = _make_subscription_mock(status="past_due")
         mock_subscription_repository.get_by_id.return_value = sub
         mock_subscription_repository.update.side_effect = lambda e: e
@@ -173,8 +153,6 @@ class TestCancelSubscription:
         assert result.status == "canceled"
 
     def test_not_found(self, mock_subscription_repository, mock_plan_repository) -> None:
-        from app.services.subscription import SubscriptionService
-
         mock_subscription_repository.get_by_id.return_value = None
         service = SubscriptionService(mock_subscription_repository, mock_plan_repository)
 
@@ -182,10 +160,6 @@ class TestCancelSubscription:
         assert result is None
 
     def test_invalid_from_trial(self, mock_subscription_repository, mock_plan_repository) -> None:
-        import pytest
-
-        from app.services.subscription import SubscriptionService
-
         sub = _make_subscription_mock(status="trial")
         mock_subscription_repository.get_by_id.return_value = sub
         service = SubscriptionService(mock_subscription_repository, mock_plan_repository)
@@ -194,10 +168,6 @@ class TestCancelSubscription:
             service.cancel_subscription(1)
 
     def test_invalid_from_canceled(self, mock_subscription_repository, mock_plan_repository) -> None:
-        import pytest
-
-        from app.services.subscription import SubscriptionService
-
         sub = _make_subscription_mock(status="canceled")
         mock_subscription_repository.get_by_id.return_value = sub
         service = SubscriptionService(mock_subscription_repository, mock_plan_repository)
@@ -206,10 +176,6 @@ class TestCancelSubscription:
             service.cancel_subscription(1)
 
     def test_invalid_from_expired(self, mock_subscription_repository, mock_plan_repository) -> None:
-        import pytest
-
-        from app.services.subscription import SubscriptionService
-
         sub = _make_subscription_mock(status="expired")
         mock_subscription_repository.get_by_id.return_value = sub
         service = SubscriptionService(mock_subscription_repository, mock_plan_repository)
@@ -220,8 +186,6 @@ class TestCancelSubscription:
 
 class TestReactivateSubscription:
     def test_from_past_due(self, mock_subscription_repository, mock_plan_repository) -> None:
-        from app.services.subscription import SubscriptionService
-
         sub = _make_subscription_mock(status="past_due")
         mock_subscription_repository.get_by_id.return_value = sub
         mock_subscription_repository.update.side_effect = lambda e: e
@@ -232,46 +196,32 @@ class TestReactivateSubscription:
         assert result.canceled_at is None
 
     def test_not_found(self, mock_subscription_repository, mock_plan_repository) -> None:
-        from app.services.subscription import SubscriptionService
-
         mock_subscription_repository.get_by_id.return_value = None
         service = SubscriptionService(mock_subscription_repository, mock_plan_repository)
 
         result = service.reactivate_subscription(999)
         assert result is None
 
-    def test_invalid_from_trial(self, mock_subscription_repository, mock_plan_repository) -> None:
-        import pytest
-
-        from app.services.subscription import SubscriptionService
-
-        sub = _make_subscription_mock(status="trial")
-        mock_subscription_repository.get_by_id.return_value = sub
-        service = SubscriptionService(mock_subscription_repository, mock_plan_repository)
-
-        with pytest.raises(ValueError, match="Cannot reactivate"):
-            service.reactivate_subscription(1)
-
     def test_invalid_from_active(self, mock_subscription_repository, mock_plan_repository) -> None:
-        import pytest
-
-        from app.services.subscription import SubscriptionService
-
         sub = _make_subscription_mock(status="active")
         mock_subscription_repository.get_by_id.return_value = sub
         service = SubscriptionService(mock_subscription_repository, mock_plan_repository)
 
-        with pytest.raises(ValueError, match="Cannot reactivate"):
+        with pytest.raises(ValueError, match="Invalid status transition"):
             service.reactivate_subscription(1)
 
     def test_invalid_from_canceled(self, mock_subscription_repository, mock_plan_repository) -> None:
-        import pytest
-
-        from app.services.subscription import SubscriptionService
-
         sub = _make_subscription_mock(status="canceled")
         mock_subscription_repository.get_by_id.return_value = sub
         service = SubscriptionService(mock_subscription_repository, mock_plan_repository)
 
-        with pytest.raises(ValueError, match="Cannot reactivate"):
+        with pytest.raises(ValueError, match="Invalid status transition"):
+            service.reactivate_subscription(1)
+
+    def test_invalid_from_expired(self, mock_subscription_repository, mock_plan_repository) -> None:
+        sub = _make_subscription_mock(status="expired")
+        mock_subscription_repository.get_by_id.return_value = sub
+        service = SubscriptionService(mock_subscription_repository, mock_plan_repository)
+
+        with pytest.raises(ValueError, match="Invalid status transition"):
             service.reactivate_subscription(1)
