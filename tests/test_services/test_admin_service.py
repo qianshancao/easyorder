@@ -1,27 +1,11 @@
 """Tests for AdminService."""
 
-from unittest.mock import MagicMock
-
 import bcrypt
 
-from app.models.admin import Admin
 from app.schemas.admin import AdminCreate, AdminUpdate, PasswordChange
-from app.services.admin import AdminService, _hash_password
+from app.services.admin import AdminService
 
-
-def _make_admin_mock(**overrides) -> MagicMock:
-    defaults = {
-        "id": 1,
-        "username": "testadmin",
-        "password_hash": _hash_password("password123"),
-        "role": "admin",
-        "status": "active",
-    }
-    defaults.update(overrides)
-    mock = MagicMock(spec=Admin)
-    for k, v in defaults.items():
-        setattr(mock, k, v)
-    return mock
+from .conftest import _make_admin_mock
 
 
 class TestAdminServiceCreateAdmin:

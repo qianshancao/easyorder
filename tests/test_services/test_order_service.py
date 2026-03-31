@@ -1,48 +1,13 @@
 """Tests for OrderService."""
 
 from datetime import UTC, datetime
-from unittest.mock import MagicMock
 
 import pytest
 
-from app.models.order import Order
-from app.models.subscription import Subscription
 from app.schemas.order import OrderCreate
 from app.services.order import OrderService
 
-
-def _make_order_mock(**overrides) -> MagicMock:
-    defaults = {
-        "id": 1,
-        "external_user_id": "user_001",
-        "subscription_id": None,
-        "type": "one_time",
-        "amount": 3000,
-        "currency": "CNY",
-        "status": "pending",
-        "paid_at": None,
-        "canceled_at": None,
-        "created_at": datetime.now(tz=UTC),
-    }
-    defaults.update(overrides)
-    mock = MagicMock(spec=Order)
-    for k, v in defaults.items():
-        setattr(mock, k, v)
-    return mock
-
-
-def _make_subscription_mock(**overrides) -> MagicMock:
-    defaults = {
-        "id": 1,
-        "external_user_id": "user_001",
-        "plan_id": 1,
-        "status": "active",
-    }
-    defaults.update(overrides)
-    mock = MagicMock(spec=Subscription)
-    for k, v in defaults.items():
-        setattr(mock, k, v)
-    return mock
+from .conftest import _make_order_mock, _make_subscription_mock
 
 
 class TestCreateOrder:
@@ -50,9 +15,7 @@ class TestCreateOrder:
         mock_order_repository.create.side_effect = lambda e: e
         service = OrderService(mock_order_repository, mock_subscription_repository)
 
-        result = service.create_order(
-            OrderCreate(external_user_id="user_001", type="one_time", amount=3000)
-        )
+        result = service.create_order(OrderCreate(external_user_id="user_001", type="one_time", amount=3000))
 
         assert result.type == "one_time"
         assert result.subscription_id is None
@@ -66,23 +29,17 @@ class TestCreateOrder:
 
         with pytest.raises(ValueError, match="subscription_id set to None"):
             service.create_order(
-                OrderCreate(
-                    external_user_id="user_001", subscription_id=1, type="one_time", amount=3000
-                )
+                OrderCreate(external_user_id="user_001", subscription_id=1, type="one_time", amount=3000)
             )
 
-    def test_create_opening_order_with_subscription(
-        self, mock_order_repository, mock_subscription_repository
-    ) -> None:
+    def test_create_opening_order_with_subscription(self, mock_order_repository, mock_subscription_repository) -> None:
         sub = _make_subscription_mock()
         mock_subscription_repository.get_by_id.return_value = sub
         mock_order_repository.create.side_effect = lambda e: e
         service = OrderService(mock_order_repository, mock_subscription_repository)
 
         result = service.create_order(
-            OrderCreate(
-                external_user_id="user_001", subscription_id=1, type="opening", amount=3000
-            )
+            OrderCreate(external_user_id="user_001", subscription_id=1, type="opening", amount=3000)
         )
 
         assert result.type == "opening"
@@ -94,9 +51,7 @@ class TestCreateOrder:
         service = OrderService(mock_order_repository, mock_subscription_repository)
 
         with pytest.raises(ValueError, match="requires subscription_id"):
-            service.create_order(
-                OrderCreate(external_user_id="user_001", type="opening", amount=3000)
-            )
+            service.create_order(OrderCreate(external_user_id="user_001", type="opening", amount=3000))
 
     def test_create_subscription_order_subscription_not_found(
         self, mock_order_repository, mock_subscription_repository
@@ -106,9 +61,7 @@ class TestCreateOrder:
 
         with pytest.raises(ValueError, match="not found"):
             service.create_order(
-                OrderCreate(
-                    external_user_id="user_001", subscription_id=999, type="renewal", amount=3000
-                )
+                OrderCreate(external_user_id="user_001", subscription_id=999, type="renewal", amount=3000)
             )
 
 
@@ -169,8 +122,10 @@ class TestMarkAsPaid:
         mock_order_repository.get_by_id.return_value = order
         service = OrderService(mock_order_repository, mock_subscription_repository)
 
+        original_paid_at = order.paid_at
         result = service.mark_as_paid(1)
         assert result.status == "paid"
+        assert result.paid_at == original_paid_at
         mock_order_repository.update.assert_not_called()
 
     def test_invalid_from_canceled(self, mock_order_repository, mock_subscription_repository) -> None:
@@ -199,9 +154,7 @@ class TestMarkAsCanceled:
         assert result.status == "canceled"
         assert result.canceled_at is not None
 
-    def test_idempotent_already_canceled(
-        self, mock_order_repository, mock_subscription_repository
-    ) -> None:
+    def test_idempotent_already_canceled(self, mock_order_repository, mock_subscription_repository) -> None:
         order = _make_order_mock(status="canceled", canceled_at=datetime.now(tz=UTC))
         mock_order_repository.get_by_id.return_value = order
         service = OrderService(mock_order_repository, mock_subscription_repository)

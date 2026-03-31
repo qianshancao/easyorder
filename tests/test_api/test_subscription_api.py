@@ -3,24 +3,29 @@
 from fastapi.testclient import TestClient
 
 
-def _create_plan(client: TestClient, **overrides: object) -> dict[str, object]:
-    """Helper to create a plan and return its JSON data."""
+def _create_plan(client: TestClient, headers: dict[str, str], **overrides: object) -> dict[str, object]:
+    """Helper to create a plan with auth and return its JSON data."""
     defaults: dict[str, object] = {
         "name": "Basic Plan",
         "cycle": "monthly",
         "base_price": 3000,
     }
     defaults.update(overrides)
-    resp = client.post("/api/v1/plans/", json=defaults)
-    assert resp.status_code == 200
+    resp = client.post("/api/v1/plans/", json=defaults, headers=headers)
+    assert resp.status_code == 201
     return resp.json()
 
 
 class TestCreateSubscription:
     """Tests for POST /api/v1/subscriptions/ (OAuth client auth)."""
 
-    def test_create_with_trial(self, client: TestClient, api_client_token_headers: dict[str, str]) -> None:
-        plan = _create_plan(client, trial_duration=7)
+    def test_create_with_trial(
+        self,
+        client: TestClient,
+        api_client_token_headers: dict[str, str],
+        super_admin_token_headers: dict[str, str],
+    ) -> None:
+        plan = _create_plan(client, super_admin_token_headers, trial_duration=7)
         payload = {"external_user_id": "user_001", "plan_id": plan["id"]}
 
         resp = client.post("/api/v1/subscriptions/", json=payload, headers=api_client_token_headers)
@@ -32,8 +37,13 @@ class TestCreateSubscription:
         assert data["plan_id"] == plan["id"]
         assert data["plan_snapshot"]["name"] == "Basic Plan"
 
-    def test_create_without_trial(self, client: TestClient, api_client_token_headers: dict[str, str]) -> None:
-        plan = _create_plan(client)
+    def test_create_without_trial(
+        self,
+        client: TestClient,
+        api_client_token_headers: dict[str, str],
+        super_admin_token_headers: dict[str, str],
+    ) -> None:
+        plan = _create_plan(client, super_admin_token_headers)
         payload = {"external_user_id": "user_002", "plan_id": plan["id"]}
 
         resp = client.post("/api/v1/subscriptions/", json=payload, headers=api_client_token_headers)
@@ -48,8 +58,8 @@ class TestCreateSubscription:
 
         assert resp.status_code == 422
 
-    def test_create_requires_auth(self, client: TestClient) -> None:
-        plan = _create_plan(client)
+    def test_create_requires_auth(self, client: TestClient, super_admin_token_headers: dict[str, str]) -> None:
+        plan = _create_plan(client, super_admin_token_headers)
         payload = {"external_user_id": "user_004", "plan_id": plan["id"]}
 
         resp = client.post("/api/v1/subscriptions/", json=payload)
@@ -60,8 +70,13 @@ class TestCreateSubscription:
 class TestGetSubscription:
     """Tests for GET /api/v1/subscriptions/{id}."""
 
-    def test_get_found(self, client: TestClient, api_client_token_headers: dict[str, str]) -> None:
-        plan = _create_plan(client)
+    def test_get_found(
+        self,
+        client: TestClient,
+        api_client_token_headers: dict[str, str],
+        super_admin_token_headers: dict[str, str],
+    ) -> None:
+        plan = _create_plan(client, super_admin_token_headers)
         create_resp = client.post(
             "/api/v1/subscriptions/",
             json={"external_user_id": "user_001", "plan_id": plan["id"]},
@@ -83,8 +98,13 @@ class TestGetSubscription:
 class TestListByUser:
     """Tests for GET /api/v1/subscriptions/by-user/{external_user_id}."""
 
-    def test_returns_subscriptions(self, client: TestClient, api_client_token_headers: dict[str, str]) -> None:
-        plan = _create_plan(client)
+    def test_returns_subscriptions(
+        self,
+        client: TestClient,
+        api_client_token_headers: dict[str, str],
+        super_admin_token_headers: dict[str, str],
+    ) -> None:
+        plan = _create_plan(client, super_admin_token_headers)
         client.post(
             "/api/v1/subscriptions/",
             json={"external_user_id": "user_001", "plan_id": plan["id"]},
@@ -106,8 +126,13 @@ class TestListByUser:
 class TestCancelSubscription:
     """Tests for POST /api/v1/subscriptions/{id}/cancel."""
 
-    def test_cancel_success(self, client: TestClient, api_client_token_headers: dict[str, str]) -> None:
-        plan = _create_plan(client)
+    def test_cancel_success(
+        self,
+        client: TestClient,
+        api_client_token_headers: dict[str, str],
+        super_admin_token_headers: dict[str, str],
+    ) -> None:
+        plan = _create_plan(client, super_admin_token_headers)
         create_resp = client.post(
             "/api/v1/subscriptions/",
             json={"external_user_id": "user_001", "plan_id": plan["id"]},
@@ -134,8 +159,9 @@ class TestAdminListAll:
         client: TestClient,
         admin_token_headers: dict[str, str],
         api_client_token_headers: dict[str, str],
+        super_admin_token_headers: dict[str, str],
     ) -> None:
-        plan = _create_plan(client)
+        plan = _create_plan(client, super_admin_token_headers)
         client.post(
             "/api/v1/subscriptions/",
             json={"external_user_id": "user_001", "plan_id": plan["id"]},
@@ -161,8 +187,9 @@ class TestAdminGetSubscription:
         client: TestClient,
         admin_token_headers: dict[str, str],
         api_client_token_headers: dict[str, str],
+        super_admin_token_headers: dict[str, str],
     ) -> None:
-        plan = _create_plan(client)
+        plan = _create_plan(client, super_admin_token_headers)
         create_resp = client.post(
             "/api/v1/subscriptions/",
             json={"external_user_id": "user_001", "plan_id": plan["id"]},
@@ -189,8 +216,9 @@ class TestAdminCancelSubscription:
         client: TestClient,
         admin_token_headers: dict[str, str],
         api_client_token_headers: dict[str, str],
+        super_admin_token_headers: dict[str, str],
     ) -> None:
-        plan = _create_plan(client)
+        plan = _create_plan(client, super_admin_token_headers)
         create_resp = client.post(
             "/api/v1/subscriptions/",
             json={"external_user_id": "user_001", "plan_id": plan["id"]},
@@ -213,9 +241,13 @@ class TestAdminReactivateSubscription:
     """Tests for POST /api/v1/subscriptions/admin/{id}/reactivate."""
 
     def test_reactivate_invalid_from_active(
-        self, client: TestClient, admin_token_headers: dict[str, str], api_client_token_headers: dict[str, str]
+        self,
+        client: TestClient,
+        admin_token_headers: dict[str, str],
+        api_client_token_headers: dict[str, str],
+        super_admin_token_headers: dict[str, str],
     ) -> None:
-        plan = _create_plan(client)
+        plan = _create_plan(client, super_admin_token_headers)
         create_resp = client.post(
             "/api/v1/subscriptions/",
             json={"external_user_id": "user_001", "plan_id": plan["id"]},

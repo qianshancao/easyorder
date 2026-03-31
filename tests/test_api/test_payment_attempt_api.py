@@ -3,9 +3,7 @@
 from fastapi.testclient import TestClient
 
 
-def _create_order(
-    client: TestClient, api_headers: dict[str, str], **overrides: object
-) -> dict[str, object]:
+def _create_order(client: TestClient, api_headers: dict[str, str], **overrides: object) -> dict[str, object]:
     defaults: dict[str, object] = {
         "external_user_id": "user_001",
         "type": "one_time",
@@ -35,9 +33,7 @@ def _create_attempt(
 
 
 class TestCreateAttempt:
-    def test_create_success(
-        self, client: TestClient, api_client_token_headers: dict[str, str]
-    ) -> None:
+    def test_create_success(self, client: TestClient, api_client_token_headers: dict[str, str]) -> None:
         order = _create_order(client, api_client_token_headers)
         data = _create_attempt(client, api_client_token_headers, order["id"])
 
@@ -47,9 +43,7 @@ class TestCreateAttempt:
         assert data["status"] == "pending"
         assert data["channel_transaction_id"] is None
 
-    def test_create_order_not_found(
-        self, client: TestClient, api_client_token_headers: dict[str, str]
-    ) -> None:
+    def test_create_order_not_found(self, client: TestClient, api_client_token_headers: dict[str, str]) -> None:
         resp = client.post(
             "/api/v1/payment-attempts/",
             json={"order_id": 99999, "channel": "alipay", "amount": 3000},
@@ -57,9 +51,7 @@ class TestCreateAttempt:
         )
         assert resp.status_code == 422
 
-    def test_create_idempotent(
-        self, client: TestClient, api_client_token_headers: dict[str, str]
-    ) -> None:
+    def test_create_idempotent(self, client: TestClient, api_client_token_headers: dict[str, str]) -> None:
         order = _create_order(client, api_client_token_headers)
         first = _create_attempt(client, api_client_token_headers, order["id"])
 
@@ -79,9 +71,7 @@ class TestCreateAttempt:
         )
         assert resp.status_code == 401
 
-    def test_create_rejects_invalid_channel(
-        self, client: TestClient, api_client_token_headers: dict[str, str]
-    ) -> None:
+    def test_create_rejects_invalid_channel(self, client: TestClient, api_client_token_headers: dict[str, str]) -> None:
         order = _create_order(client, api_client_token_headers)
         resp = client.post(
             "/api/v1/payment-attempts/",
@@ -92,31 +82,21 @@ class TestCreateAttempt:
 
 
 class TestGetAttempt:
-    def test_get_found(
-        self, client: TestClient, api_client_token_headers: dict[str, str]
-    ) -> None:
+    def test_get_found(self, client: TestClient, api_client_token_headers: dict[str, str]) -> None:
         order = _create_order(client, api_client_token_headers)
         attempt = _create_attempt(client, api_client_token_headers, order["id"])
 
-        resp = client.get(
-            f"/api/v1/payment-attempts/{attempt['id']}", headers=api_client_token_headers
-        )
+        resp = client.get(f"/api/v1/payment-attempts/{attempt['id']}", headers=api_client_token_headers)
         assert resp.status_code == 200
         assert resp.json()["id"] == attempt["id"]
 
-    def test_get_not_found(
-        self, client: TestClient, api_client_token_headers: dict[str, str]
-    ) -> None:
-        resp = client.get(
-            "/api/v1/payment-attempts/99999", headers=api_client_token_headers
-        )
+    def test_get_not_found(self, client: TestClient, api_client_token_headers: dict[str, str]) -> None:
+        resp = client.get("/api/v1/payment-attempts/99999", headers=api_client_token_headers)
         assert resp.status_code == 404
 
 
 class TestListByOrder:
-    def test_returns_attempts(
-        self, client: TestClient, api_client_token_headers: dict[str, str]
-    ) -> None:
+    def test_returns_attempts(self, client: TestClient, api_client_token_headers: dict[str, str]) -> None:
         order = _create_order(client, api_client_token_headers)
         first = _create_attempt(client, api_client_token_headers, order["id"])
 
@@ -137,17 +117,13 @@ class TestListByOrder:
         assert len(resp.json()) == 2
 
     def test_empty(self, client: TestClient, api_client_token_headers: dict[str, str]) -> None:
-        resp = client.get(
-            "/api/v1/payment-attempts/by-order/99999", headers=api_client_token_headers
-        )
+        resp = client.get("/api/v1/payment-attempts/by-order/99999", headers=api_client_token_headers)
         assert resp.status_code == 200
         assert resp.json() == []
 
 
 class TestMarkAsSuccess:
-    def test_success_from_pending(
-        self, client: TestClient, api_client_token_headers: dict[str, str]
-    ) -> None:
+    def test_success_from_pending(self, client: TestClient, api_client_token_headers: dict[str, str]) -> None:
         order = _create_order(client, api_client_token_headers)
         attempt = _create_attempt(client, api_client_token_headers, order["id"])
 
@@ -160,9 +136,7 @@ class TestMarkAsSuccess:
         assert resp.json()["status"] == "success"
         assert resp.json()["channel_transaction_id"] == "txn_123"
 
-    def test_idempotent(
-        self, client: TestClient, api_client_token_headers: dict[str, str]
-    ) -> None:
+    def test_idempotent(self, client: TestClient, api_client_token_headers: dict[str, str]) -> None:
         order = _create_order(client, api_client_token_headers)
         attempt = _create_attempt(client, api_client_token_headers, order["id"])
 
@@ -180,9 +154,7 @@ class TestMarkAsSuccess:
         assert resp.status_code == 200
         assert resp.json()["status"] == "success"
 
-    def test_not_found(
-        self, client: TestClient, api_client_token_headers: dict[str, str]
-    ) -> None:
+    def test_not_found(self, client: TestClient, api_client_token_headers: dict[str, str]) -> None:
         resp = client.post(
             "/api/v1/payment-attempts/99999/success",
             json={"channel_transaction_id": "txn_123"},
@@ -192,9 +164,7 @@ class TestMarkAsSuccess:
 
 
 class TestMarkAsFailed:
-    def test_fail_from_pending(
-        self, client: TestClient, api_client_token_headers: dict[str, str]
-    ) -> None:
+    def test_fail_from_pending(self, client: TestClient, api_client_token_headers: dict[str, str]) -> None:
         order = _create_order(client, api_client_token_headers)
         attempt = _create_attempt(client, api_client_token_headers, order["id"])
 
@@ -205,9 +175,7 @@ class TestMarkAsFailed:
         assert resp.status_code == 200
         assert resp.json()["status"] == "failed"
 
-    def test_idempotent(
-        self, client: TestClient, api_client_token_headers: dict[str, str]
-    ) -> None:
+    def test_idempotent(self, client: TestClient, api_client_token_headers: dict[str, str]) -> None:
         order = _create_order(client, api_client_token_headers)
         attempt = _create_attempt(client, api_client_token_headers, order["id"])
 
@@ -223,18 +191,14 @@ class TestMarkAsFailed:
         assert resp.status_code == 200
         assert resp.json()["status"] == "failed"
 
-    def test_not_found(
-        self, client: TestClient, api_client_token_headers: dict[str, str]
-    ) -> None:
+    def test_not_found(self, client: TestClient, api_client_token_headers: dict[str, str]) -> None:
         resp = client.post(
             "/api/v1/payment-attempts/99999/fail",
             headers=api_client_token_headers,
         )
         assert resp.status_code == 404
 
-    def test_fail_then_create_new(
-        self, client: TestClient, api_client_token_headers: dict[str, str]
-    ) -> None:
+    def test_fail_then_create_new(self, client: TestClient, api_client_token_headers: dict[str, str]) -> None:
         order = _create_order(client, api_client_token_headers)
         first = _create_attempt(client, api_client_token_headers, order["id"])
 
@@ -314,9 +278,7 @@ class TestAdminListAll:
         client: TestClient,
         api_client_token_headers: dict[str, str],
     ) -> None:
-        resp = client.get(
-            "/api/v1/payment-attempts/admin/all", headers=api_client_token_headers
-        )
+        resp = client.get("/api/v1/payment-attempts/admin/all", headers=api_client_token_headers)
         assert resp.status_code == 401
 
 
@@ -330,16 +292,10 @@ class TestAdminGetAttempt:
         order = _create_order(client, api_client_token_headers)
         attempt = _create_attempt(client, api_client_token_headers, order["id"])
 
-        resp = client.get(
-            f"/api/v1/payment-attempts/admin/{attempt['id']}", headers=admin_token_headers
-        )
+        resp = client.get(f"/api/v1/payment-attempts/admin/{attempt['id']}", headers=admin_token_headers)
         assert resp.status_code == 200
         assert resp.json()["id"] == attempt["id"]
 
-    def test_get_not_found(
-        self, client: TestClient, admin_token_headers: dict[str, str]
-    ) -> None:
-        resp = client.get(
-            "/api/v1/payment-attempts/admin/99999", headers=admin_token_headers
-        )
+    def test_get_not_found(self, client: TestClient, admin_token_headers: dict[str, str]) -> None:
+        resp = client.get("/api/v1/payment-attempts/admin/99999", headers=admin_token_headers)
         assert resp.status_code == 404

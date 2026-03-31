@@ -1,5 +1,8 @@
 """Tests for OAuthClientRepository."""
 
+import pytest
+from sqlalchemy.exc import IntegrityError
+
 from app.models.oauth_client import OAuthClient
 
 
@@ -36,8 +39,33 @@ class TestOAuthClientRepositoryGetByClientId:
 
 
 class TestOAuthClientRepositoryListAll:
+    def test_list_all_empty(self, oauth_client_repository) -> None:
+        assert oauth_client_repository.list_all() == []
+
     def test_list_all_with_data(self, oauth_client_repository) -> None:
         oauth_client_repository.create(OAuthClient(client_id="c1", client_secret="h1", name="App1"))
         oauth_client_repository.create(OAuthClient(client_id="c2", client_secret="h2", name="App2"))
         result = oauth_client_repository.list_all()
         assert len(result) == 2
+
+
+class TestOAuthClientRepositoryUniqueConstraints:
+    def test_create_duplicate_client_id_raises_integrity_error(self, oauth_client_repository) -> None:
+        oauth_client_repository.create(OAuthClient(client_id="cid_dup", client_secret="h1", name="App1"))
+        with pytest.raises(IntegrityError):
+            oauth_client_repository.create(OAuthClient(client_id="cid_dup", client_secret="h2", name="App2"))
+
+
+class TestOAuthClientRepositoryUpdate:
+    def test_update_status(self, oauth_client_repository) -> None:
+        client = oauth_client_repository.create(OAuthClient(client_id="c1", client_secret="secret", name="App"))
+        client.status = "disabled"
+        updated = oauth_client_repository.update(client)
+        assert updated.status == "disabled"
+
+
+class TestOAuthClientRepositoryDelete:
+    def test_delete_client(self, oauth_client_repository) -> None:
+        client = oauth_client_repository.create(OAuthClient(client_id="c1", client_secret="secret", name="App"))
+        oauth_client_repository.delete(client)
+        assert oauth_client_repository.get_by_id(client.id) is None

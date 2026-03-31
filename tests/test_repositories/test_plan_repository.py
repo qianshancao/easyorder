@@ -90,3 +90,18 @@ class TestPlanRepositoryListAll:
 
         assert result[0].id == p1.id
         assert result[1].id == p2.id
+
+
+class TestPlanRepositoryUpdate:
+    def test_update_name(self, plan_repository: PlanRepository) -> None:
+        plan = plan_repository.create(_build_plan())
+        plan.name = "Pro Plan"
+        updated = plan_repository.update(plan)
+        assert updated.name == "Pro Plan"
+
+
+class TestPlanRepositoryDelete:
+    def test_delete_plan(self, plan_repository: PlanRepository) -> None:
+        plan = plan_repository.create(_build_plan())
+        plan_repository.delete(plan)
+        assert plan_repository.get_by_id(plan.id) is None

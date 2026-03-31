@@ -2,6 +2,8 @@
 
 from datetime import UTC, datetime, timedelta
 
+import pytest
+
 from app.models.plan import Plan
 from app.models.subscription import Subscription
 from app.repositories.base import BaseRepository
@@ -76,6 +78,13 @@ class TestSubscriptionRepositoryGetByExternalUserId:
         assert len(result) == 1
         assert result[0].external_user_id == "user_a"
 
+    def test_results_ordered_by_id(self, subscription_repository, db_session) -> None:
+        plan = _insert_plan(db_session)
+        subscription_repository.create(_build_subscription(plan.id, external_user_id="user_a"))
+        subscription_repository.create(_build_subscription(plan.id, external_user_id="user_a"))
+        result = subscription_repository.get_by_external_user_id("user_a")
+        assert result[0].id < result[1].id
+
 
 class TestSubscriptionRepositoryListAll:
     def test_list_all_empty(self, subscription_repository) -> None:
@@ -86,3 +95,29 @@ class TestSubscriptionRepositoryListAll:
         subscription_repository.create(_build_subscription(plan.id, external_user_id="user_a"))
         subscription_repository.create(_build_subscription(plan.id, external_user_id="user_b"))
         assert len(subscription_repository.list_all()) == 2
+
+
+class TestSubscriptionRepositoryUpdate:
+    def test_update_status(self, subscription_repository, db_session) -> None:
+        plan = _insert_plan(db_session)
+        sub = subscription_repository.create(_build_subscription(plan.id))
+        sub.status = "active"
+        updated = subscription_repository.update(sub)
+        assert updated.status == "active"
+
+
+class TestSubscriptionRepositoryDelete:
+    def test_delete_subscription(self, subscription_repository, db_session) -> None:
+        plan = _insert_plan(db_session)
+        sub = subscription_repository.create(_build_subscription(plan.id))
+        subscription_repository.delete(sub)
+        assert subscription_repository.get_by_id(sub.id) is None
+
+
+class TestSubscriptionRepositoryFKConstraints:
+    def test_create_with_invalid_plan_id_raises_integrity_error(self, subscription_repository, db_session) -> None:
+        from sqlalchemy.exc import IntegrityError
+
+        sub = _build_subscription(plan_id=99999)  # Non-existent plan_id
+        with pytest.raises(IntegrityError):
+            subscription_repository.create(sub)

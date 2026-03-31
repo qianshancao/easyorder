@@ -1,5 +1,8 @@
 """Tests for SystemConfigRepository."""
 
+import pytest
+from sqlalchemy.exc import IntegrityError
+
 from app.models.system_config import SystemConfig
 
 
@@ -35,8 +38,33 @@ class TestSystemConfigRepositoryGetByKey:
 
 
 class TestSystemConfigRepositoryListAll:
+    def test_list_all_empty(self, system_config_repository) -> None:
+        assert system_config_repository.list_all() == []
+
     def test_list_all_with_data(self, system_config_repository) -> None:
         system_config_repository.create(SystemConfig(key="k1", value={"a": 1}))
         system_config_repository.create(SystemConfig(key="k2", value={"b": 2}))
         result = system_config_repository.list_all()
         assert len(result) == 2
+
+
+class TestSystemConfigRepositoryUniqueConstraints:
+    def test_create_duplicate_key_raises_integrity_error(self, system_config_repository) -> None:
+        system_config_repository.create(SystemConfig(key="site.name", value={"title": "A"}))
+        with pytest.raises(IntegrityError):
+            system_config_repository.create(SystemConfig(key="site.name", value={"title": "B"}))
+
+
+class TestSystemConfigRepositoryUpdate:
+    def test_update_value(self, system_config_repository) -> None:
+        config = system_config_repository.create(SystemConfig(key="k1", value={"v": 1}))
+        config.value = {"v": 2}
+        updated = system_config_repository.update(config)
+        assert updated.value == {"v": 2}
+
+
+class TestSystemConfigRepositoryDelete:
+    def test_delete_config(self, system_config_repository) -> None:
+        config = system_config_repository.create(SystemConfig(key="k1", value={"v": 1}))
+        system_config_repository.delete(config)
+        assert system_config_repository.get_by_id(config.id) is None

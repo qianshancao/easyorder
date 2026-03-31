@@ -6,9 +6,10 @@ from unittest.mock import MagicMock
 import pytest
 
 from app.models.plan import Plan
-from app.models.subscription import Subscription
 from app.schemas.subscription import SubscriptionCreate
 from app.services.subscription import CYCLE_DURATION_DAYS, SubscriptionService
+
+from .conftest import _make_subscription_mock
 
 
 def _make_plan_mock(**overrides) -> MagicMock:
@@ -25,24 +26,6 @@ def _make_plan_mock(**overrides) -> MagicMock:
     }
     defaults.update(overrides)
     mock = MagicMock(spec=Plan)
-    for k, v in defaults.items():
-        setattr(mock, k, v)
-    return mock
-
-
-def _make_subscription_mock(**overrides) -> MagicMock:
-    defaults = {
-        "id": 1,
-        "external_user_id": "user_001",
-        "plan_id": 1,
-        "plan_snapshot": {"name": "Basic Plan", "cycle": "monthly", "base_price": 3000},
-        "status": "trial",
-        "current_period_start": datetime.now(tz=UTC),
-        "current_period_end": datetime.now(tz=UTC) + timedelta(days=7),
-        "canceled_at": None,
-    }
-    defaults.update(overrides)
-    mock = MagicMock(spec=Subscription)
     for k, v in defaults.items():
         setattr(mock, k, v)
     return mock
@@ -96,6 +79,28 @@ class TestCreateSubscription:
         assert snap["trial_price"] == 0
         assert snap["trial_duration"] == 7
         assert snap["features"] == {"storage": "10GB"}
+
+    def test_quarterly_cycle_period(self, mock_subscription_repository, mock_plan_repository) -> None:
+        plan = _make_plan_mock(cycle="quarterly")
+        mock_plan_repository.get_by_id.return_value = plan
+        mock_subscription_repository.create.side_effect = lambda e: e
+        service = SubscriptionService(mock_subscription_repository, mock_plan_repository)
+
+        result = service.create_subscription(SubscriptionCreate(external_user_id="user_001", plan_id=1))
+
+        expected_end = result.current_period_start + timedelta(days=90)
+        assert result.current_period_end == expected_end
+
+    def test_yearly_cycle_period(self, mock_subscription_repository, mock_plan_repository) -> None:
+        plan = _make_plan_mock(cycle="yearly")
+        mock_plan_repository.get_by_id.return_value = plan
+        mock_subscription_repository.create.side_effect = lambda e: e
+        service = SubscriptionService(mock_subscription_repository, mock_plan_repository)
+
+        result = service.create_subscription(SubscriptionCreate(external_user_id="user_001", plan_id=1))
+
+        expected_end = result.current_period_start + timedelta(days=365)
+        assert result.current_period_end == expected_end
 
 
 class TestGetSubscription:
@@ -194,6 +199,9 @@ class TestReactivateSubscription:
         result = service.reactivate_subscription(1)
         assert result.status == "active"
         assert result.canceled_at is None
+        assert result.current_period_start is not None
+        assert result.current_period_end is not None
+        assert result.current_period_end == result.current_period_start + timedelta(days=CYCLE_DURATION_DAYS["monthly"])
 
     def test_not_found(self, mock_subscription_repository, mock_plan_repository) -> None:
         mock_subscription_repository.get_by_id.return_value = None
@@ -217,6 +225,16 @@ class TestReactivateSubscription:
 
         with pytest.raises(ValueError, match="Invalid status transition"):
             service.reactivate_subscription(1)
+
+    def test_from_trial_to_active(self, mock_subscription_repository, mock_plan_repository) -> None:
+        sub = _make_subscription_mock(status="trial")
+        mock_subscription_repository.get_by_id.return_value = sub
+        mock_subscription_repository.update.side_effect = lambda e: e
+        service = SubscriptionService(mock_subscription_repository, mock_plan_repository)
+
+        result = service.reactivate_subscription(1)
+        assert result.status == "active"
+        assert result.canceled_at is None
 
     def test_invalid_from_expired(self, mock_subscription_repository, mock_plan_repository) -> None:
         sub = _make_subscription_mock(status="expired")

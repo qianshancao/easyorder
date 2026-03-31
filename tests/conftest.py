@@ -38,11 +38,21 @@ def engine() -> Engine:
     StaticPool ensures all connections share the same underlying sqlite3 connection,
     which is essential for :memory: databases.
     """
-    return create_engine(
+    engine_instance = create_engine(
         "sqlite:///:memory:",
         connect_args={"check_same_thread": False},
         poolclass=StaticPool,
     )
+    # Enable foreign key constraints for SQLite
+    from sqlalchemy import event
+
+    @event.listens_for(engine_instance, "connect")
+    def set_sqlite_pragma(dbapi_conn, connection_record):
+        cursor = dbapi_conn.cursor()
+        cursor.execute("PRAGMA foreign_keys=ON")
+        cursor.close()
+
+    return engine_instance
 
 
 @pytest.fixture(autouse=True)

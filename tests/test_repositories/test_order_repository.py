@@ -2,6 +2,8 @@
 
 from datetime import UTC, datetime, timedelta
 
+import pytest
+
 from app.models.order import Order
 from app.models.plan import Plan
 from app.models.subscription import Subscription
@@ -90,16 +92,32 @@ class TestOrderRepositoryGetByExternalUserId:
         result = order_repository.get_by_external_user_id("user_a")
         assert len(result) == 1
 
+    def test_results_ordered_by_id(self, order_repository) -> None:
+        order_repository.create(_build_order(external_user_id="user_a"))
+        order_repository.create(_build_order(external_user_id="user_a"))
+        result = order_repository.get_by_external_user_id("user_a")
+        assert result[0].id < result[1].id
+
 
 class TestOrderRepositoryGetBySubscriptionId:
-    def test_returns_orders_for_subscription(self, order_repository) -> None:
-        order_repository.create(_build_order(subscription_id=1, type="opening"))
-        order_repository.create(_build_order(subscription_id=1, type="renewal"))
-        result = order_repository.get_by_subscription_id(1)
+    def test_returns_orders_for_subscription(self, order_repository, db_session) -> None:
+        plan = _insert_plan(db_session)
+        sub = _insert_subscription(db_session, plan.id)
+        order_repository.create(_build_order(subscription_id=sub.id, type="opening"))
+        order_repository.create(_build_order(subscription_id=sub.id, type="renewal"))
+        result = order_repository.get_by_subscription_id(sub.id)
         assert len(result) == 2
 
     def test_returns_empty_for_nonexistent_subscription(self, order_repository) -> None:
         assert order_repository.get_by_subscription_id(999) == []
+
+    def test_results_ordered_by_id(self, order_repository, db_session) -> None:
+        plan = _insert_plan(db_session)
+        sub = _insert_subscription(db_session, plan.id)
+        order_repository.create(_build_order(subscription_id=sub.id, type="opening"))
+        order_repository.create(_build_order(subscription_id=sub.id, type="renewal"))
+        result = order_repository.get_by_subscription_id(sub.id)
+        assert result[0].id < result[1].id
 
 
 class TestOrderRepositoryListFiltered:
@@ -115,9 +133,11 @@ class TestOrderRepositoryListFiltered:
         assert len(result) == 1
         assert result[0].status == "pending"
 
-    def test_filter_by_type(self, order_repository) -> None:
+    def test_filter_by_type(self, order_repository, db_session) -> None:
+        plan = _insert_plan(db_session)
+        sub = _insert_subscription(db_session, plan.id)
         order_repository.create(_build_order(type="one_time"))
-        order_repository.create(_build_order(type="opening", subscription_id=1))
+        order_repository.create(_build_order(type="opening", subscription_id=sub.id))
         result = order_repository.list_filtered(order_type="one_time")
         assert len(result) == 1
         assert result[0].type == "one_time"
@@ -128,10 +148,13 @@ class TestOrderRepositoryListFiltered:
         result = order_repository.list_filtered(external_user_id="user_a")
         assert len(result) == 1
 
-    def test_filter_by_subscription_id(self, order_repository) -> None:
-        order_repository.create(_build_order(subscription_id=1, type="opening"))
-        order_repository.create(_build_order(subscription_id=2, type="opening"))
-        result = order_repository.list_filtered(subscription_id=1)
+    def test_filter_by_subscription_id(self, order_repository, db_session) -> None:
+        plan = _insert_plan(db_session)
+        sub1 = _insert_subscription(db_session, plan.id)
+        sub2 = _insert_subscription(db_session, plan.id)
+        order_repository.create(_build_order(subscription_id=sub1.id, type="opening"))
+        order_repository.create(_build_order(subscription_id=sub2.id, type="opening"))
+        result = order_repository.list_filtered(subscription_id=sub1.id)
         assert len(result) == 1
 
     def test_combined_filters(self, order_repository) -> None:
@@ -156,3 +179,27 @@ class TestOrderRepositoryListAll:
         order_repository.create(_build_order(external_user_id="user_a"))
         order_repository.create(_build_order(external_user_id="user_b"))
         assert len(order_repository.list_all()) == 2
+
+
+class TestOrderRepositoryUpdate:
+    def test_update_status(self, order_repository) -> None:
+        order = order_repository.create(_build_order())
+        order.status = "paid"
+        updated = order_repository.update(order)
+        assert updated.status == "paid"
+
+
+class TestOrderRepositoryDelete:
+    def test_delete_order(self, order_repository) -> None:
+        order = order_repository.create(_build_order())
+        order_repository.delete(order)
+        assert order_repository.get_by_id(order.id) is None
+
+
+class TestOrderRepositoryFKConstraints:
+    def test_create_with_invalid_subscription_id_raises_integrity_error(self, order_repository) -> None:
+        from sqlalchemy.exc import IntegrityError
+
+        order = _build_order(subscription_id=99999)  # Non-existent subscription_id
+        with pytest.raises(IntegrityError):
+            order_repository.create(order)
