@@ -1,4 +1,5 @@
 import logging
+from datetime import UTC, datetime
 
 from app.models.payment_attempt import PaymentAttempt
 from app.repositories.order import OrderRepository
@@ -118,6 +119,21 @@ class PaymentAttemptService(BaseService[PaymentAttempt]):
                 "channel_transaction_id": channel_transaction_id,
             },
         )
+
+        # 支付成功后自动联动订单状态
+        order = self.order_repo.get_by_id(updated.order_id)
+        if order is not None and order.status == "pending":
+            order.status = "paid"
+            order.paid_at = datetime.now(tz=UTC)
+            self.order_repo.update(order)
+            logger.info(
+                "payment_attempt.order_paid",
+                extra={
+                    "order_id": order.id,
+                    "payment_attempt_id": updated.id,
+                },
+            )
+
         return updated
 
     def mark_as_failed(self, attempt_id: int) -> PaymentAttempt | None:

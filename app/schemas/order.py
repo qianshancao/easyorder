@@ -3,6 +3,8 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
+from app.schemas.payment_attempt import PaymentAttemptResponse
+
 
 class OrderCreate(BaseModel):
     external_user_id: str
@@ -26,3 +28,15 @@ class OrderResponse(BaseModel):
     canceled_at: datetime | None
 
     model_config = {"from_attributes": True}
+
+
+class OneTimePurchaseRequest(BaseModel):
+    external_user_id: str
+    amount: int = Field(gt=0)
+    currency: str = Field(default="CNY", max_length=3)
+    channel: Literal["alipay", "wechat", "stripe"]
+
+
+class OneTimePurchaseResponse(BaseModel):
+    order: OrderResponse
+    payment_attempt: PaymentAttemptResponse

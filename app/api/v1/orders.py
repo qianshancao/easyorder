@@ -1,8 +1,20 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
-from app.api.deps import CurrentAdmin, CurrentApiClient, get_order_service
-from app.schemas.order import OrderCreate, OrderResponse
+from app.api.deps import (
+    CurrentAdmin,
+    CurrentApiClient,
+    get_order_service,
+    get_payment_attempt_service,
+)
+from app.schemas.order import (
+    OneTimePurchaseRequest,
+    OneTimePurchaseResponse,
+    OrderCreate,
+    OrderResponse,
+)
+from app.schemas.payment_attempt import PaymentAttemptCreate, PaymentAttemptResponse
 from app.services.order import OrderService
+from app.services.payment_attempt import PaymentAttemptService
 
 router = APIRouter(prefix="/orders", tags=["订单"])
 
@@ -80,6 +92,37 @@ def create_order(
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc)) from exc
     return OrderResponse.model_validate(order)
+
+
+@router.post("/one-time-pay", response_model=OneTimePurchaseResponse)
+def one_time_purchase(
+    data: OneTimePurchaseRequest,
+    _client: CurrentApiClient,
+    service: OrderService = Depends(get_order_service),
+    pa_service: PaymentAttemptService = Depends(get_payment_attempt_service),
+) -> OneTimePurchaseResponse:
+    try:
+        order = service.create_order(
+            OrderCreate(
+                external_user_id=data.external_user_id,
+                type="one_time",
+                amount=data.amount,
+                currency=data.currency,
+            )
+        )
+        attempt = pa_service.create_attempt(
+            PaymentAttemptCreate(
+                order_id=order.id,
+                channel=data.channel,
+                amount=data.amount,
+            )
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc)) from exc
+    return OneTimePurchaseResponse(
+        order=OrderResponse.model_validate(order),
+        payment_attempt=PaymentAttemptResponse.model_validate(attempt),
+    )
 
 
 @router.get("/by-user/{external_user_id}", response_model=list[OrderResponse])
