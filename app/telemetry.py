@@ -10,12 +10,15 @@ from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from opentelemetry.instrumentation.logging import LoggingInstrumentor
 from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
 from opentelemetry.sdk._logs import LoggerProvider, LoggingHandler
-from opentelemetry.sdk._logs.export import BatchLogRecordProcessor
+from opentelemetry.sdk._logs.export import (
+    BatchLogRecordProcessor,
+    SimpleLogRecordProcessor,
+)
 from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
 from opentelemetry.sdk.resources import Resource
 from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import BatchSpanProcessor
+from opentelemetry.sdk.trace.export import BatchSpanProcessor, SimpleSpanProcessor
 from sqlalchemy import Engine
 
 from app.config import settings
@@ -30,13 +33,21 @@ def setup_telemetry(app: FastAPI, engine: Engine) -> None:
 
     resource = Resource.create({"service.name": "easyorder"})
 
+    dev = settings.otel_dev_mode
+
     # Traces
     tracer_provider = TracerProvider(resource=resource)
-    tracer_provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))
+    if dev:
+        tracer_provider.add_span_processor(SimpleSpanProcessor(OTLPSpanExporter()))
+    else:
+        tracer_provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))
     trace.set_tracer_provider(tracer_provider)
 
     # Metrics
-    metric_reader = PeriodicExportingMetricReader(OTLPMetricExporter())
+    metric_reader = PeriodicExportingMetricReader(
+        OTLPMetricExporter(),
+        export_interval_millis=1000 if dev else 60_000,
+    )
     meter_provider = MeterProvider(resource=resource, metric_readers=[metric_reader])
     metrics.set_meter_provider(meter_provider)
 
@@ -45,7 +56,10 @@ def setup_telemetry(app: FastAPI, engine: Engine) -> None:
 
     # Logs
     logger_provider = LoggerProvider(resource=resource)
-    logger_provider.add_log_record_processor(BatchLogRecordProcessor(OTLPLogExporter()))
+    if dev:
+        logger_provider.add_log_record_processor(SimpleLogRecordProcessor(OTLPLogExporter()))
+    else:
+        logger_provider.add_log_record_processor(BatchLogRecordProcessor(OTLPLogExporter()))
     logs.set_logger_provider(logger_provider)
     logging_handler = LoggingHandler(logger_provider=logger_provider, level=logging.NOTSET)
     logging.getLogger().addHandler(logging_handler)
@@ -54,7 +68,7 @@ def setup_telemetry(app: FastAPI, engine: Engine) -> None:
     SQLAlchemyInstrumentor().instrument(engine=engine)
     FastAPIInstrumentor.instrument_app(app)
 
-    logger.info("telemetry.enabled")
+    logger.info("telemetry.enabled", extra={"dev_mode": dev})
 
 
 def shutdown_telemetry() -> None:
