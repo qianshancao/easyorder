@@ -8,8 +8,8 @@ receivers:
 
 processors:
   batch:
-    timeout: 0s
-    send_batch_size: 1024
+    timeout: 2s
+    send_batch_size: 8
 
 exporters:
   otlp_http/victoriametrics:
