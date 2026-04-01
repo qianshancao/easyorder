@@ -8,11 +8,11 @@ datasources:
     editable: false
 
   - name: VictoriaLogs
-    type: victorialogs-datasource
+    type: victoriametrics-logs-datasource
     url: http://victorialogs:9429
     editable: false
 
   - name: VictoriaTraces
-    type: tempo
-    url: http://victoriatraces:9428
+    type: jaeger
+    url: http://victoriatraces:9428/select/jaeger
     editable: false
