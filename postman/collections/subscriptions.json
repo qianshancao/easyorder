@@ -1,0 +1,479 @@
+{
+  "_postman_id": "subscriptions-collection",
+  "name": "Subscriptions",
+  "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+  "item": [
+    {
+      "name": "Setup",
+      "item": [
+        {
+          "name": "Create Basic Plan",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\": \"Basic Plan\", \"cycle\": \"monthly\", \"base_price\": 2900}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/plans/",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "plans", ""]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const res = pm.response.json();",
+                  "pm.environment.set(\"plan_id\", res.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create Premium Plan",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\": \"Premium Plan\", \"cycle\": \"monthly\", \"base_price\": 9900}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/plans/",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "plans", ""]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const res = pm.response.json();",
+                  "pm.environment.set(\"plan_id_2\", res.id);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Business",
+      "item": [
+        {
+          "name": "Create Subscription",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"external_user_id\": \"user_001\", \"plan_id\": {{plan_id}}}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/subscriptions/",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "subscriptions", ""]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{api_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const res = pm.response.json();",
+                  "pm.environment.set(\"subscription_id\", res.id);",
+                  "pm.test(\"Status is 201\", () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List by User",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/subscriptions/by-user/user_001",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "subscriptions", "by-user", "user_001"]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{api_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Subscription",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/subscriptions/{{subscription_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "subscriptions", "{{subscription_id}}"]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{api_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Upgrade Subscription",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"new_plan_id\": {{plan_id_2}}}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/subscriptions/{{subscription_id}}/upgrade",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "subscriptions", "{{subscription_id}}", "upgrade"]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{api_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Downgrade Subscription",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"new_plan_id\": {{plan_id}}}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/subscriptions/{{subscription_id}}/downgrade",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "subscriptions", "{{subscription_id}}", "downgrade"]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{api_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cancel Subscription",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/subscriptions/{{subscription_id}}/cancel",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "subscriptions", "{{subscription_id}}", "cancel"]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{api_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Admin",
+      "item": [
+        {
+          "name": "List All Subscriptions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/subscriptions/admin/all",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "subscriptions", "admin", "all"]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Subscription (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/subscriptions/admin/{{subscription_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "subscriptions", "admin", "{{subscription_id}}"]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cancel Subscription (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/subscriptions/admin/{{subscription_id}}/cancel",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "subscriptions", "admin", "{{subscription_id}}", "cancel"]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200 or 422\", () => pm.expect([200, 422]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reactivate Subscription",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/subscriptions/admin/{{subscription_id}}/reactivate",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "subscriptions", "admin", "{{subscription_id}}", "reactivate"]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200 or 422\", () => pm.expect([200, 422]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

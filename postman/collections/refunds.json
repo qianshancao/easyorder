@@ -1,0 +1,324 @@
+{
+  "_postman_id": "refunds-collection-001",
+  "name": "Refunds",
+  "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+  "item": [
+    {
+      "name": "Admin",
+      "item": [
+        {
+          "name": "List All Refunds",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/refunds/admin/all?order_id={{order_id}}&status={{status}}&channel={{channel}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "refunds", "admin", "all"],
+              "query": [
+                {
+                  "key": "order_id",
+                  "value": "{{order_id}}",
+                  "disabled": true
+                },
+                {
+                  "key": "status",
+                  "value": "{{status}}",
+                  "disabled": true
+                },
+                {
+                  "key": "channel",
+                  "value": "{{channel}}",
+                  "disabled": true
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Refund (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/refunds/admin/{{refund_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "refunds", "admin", "{{refund_id}}"]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Business",
+      "item": [
+        {
+          "name": "Setup",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"external_user_id\": \"user_refund_test\", \"type\": \"one_time\", \"amount\": 1000, \"currency\": \"CNY\"}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/orders/",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "orders", ""]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{api_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Setup order - Status is 201\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test(\"Setup order - Save order_id\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('id');",
+                  "    pm.environment.set('order_id', jsonData.id);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Pay Order",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/orders/{{order_id}}/pay",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "orders", "{{order_id}}", "pay"]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{api_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Pay order - Status is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create Refund",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"order_id\": {{order_id}}, \"amount\": 500, \"reason\": \"Customer request\", \"channel\": \"alipay\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/refunds/",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "refunds", ""]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{api_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 201\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has id\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('id');",
+                  "    pm.collectionVariables.set('refund_id', jsonData.id);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Refund",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/refunds/{{refund_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "refunds", "{{refund_id}}"]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{api_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Mark Success",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"channel_refund_id\": \"ref_123456\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/refunds/{{refund_id}}/success",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "refunds", "{{refund_id}}", "success"]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{api_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Mark Failed",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Refund failed\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/refunds/{{refund_id}}/fail",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "refunds", "{{refund_id}}", "fail"]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{api_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

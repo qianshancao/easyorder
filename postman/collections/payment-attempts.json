@@ -1,0 +1,212 @@
+{
+  "_postman_id": "payment-attempts-collection-uuid-002",
+  "name": "Payment Attempts",
+  "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+  "item": [
+    {
+      "name": "Setup",
+      "item": [
+        {
+          "name": "Create Order for Test",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"external_user_id\": \"user_payment_test\", \"type\": \"one_time\", \"amount\": 1000, \"currency\": \"CNY\"}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/orders/",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "orders", ""]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [{"key": "token", "value": "{{api_token}}", "type": "string"}]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const res = pm.response.json();",
+                  "pm.environment.set(\"order_id\", res.id);",
+                  "pm.test(\"Status is 201\", () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Admin",
+      "item": [
+        {
+          "name": "List All Attempts",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/payment-attempts/admin/all?order_id=&channel=&status=",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "payment-attempts", "admin", "all"],
+              "query": [
+                {"key": "order_id", "value": "", "description": "Optional: Filter by order ID"},
+                {"key": "channel", "value": "", "description": "Optional: Filter by channel"},
+                {"key": "status", "value": "", "description": "Optional: Filter by status"}
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [{"key": "token", "value": "{{admin_token}}", "type": "string"}]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Attempt (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/payment-attempts/admin/{{attempt_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "payment-attempts", "admin", "{{attempt_id}}"],
+              "variable": [{"key": "attempt_id", "value": ""}]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [{"key": "token", "value": "{{admin_token}}", "type": "string"}]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Business",
+      "item": [
+        {
+          "name": "Create Attempt",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"order_id\": \"{{order_id}}\",\n  \"channel\": \"alipay\",\n  \"amount\": 1000\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/payment-attempts/",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "payment-attempts", ""]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [{"key": "token", "value": "{{api_token}}", "type": "string"}]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 201\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "var jsonData = pm.response.json();",
+                  "pm.environment.set(\"attempt_id\", jsonData.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List by Order",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/payment-attempts/by-order/{{order_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "payment-attempts", "by-order", "{{order_id}}"],
+              "variable": [{"key": "order_id", "value": ""}]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [{"key": "token", "value": "{{api_token}}", "type": "string"}]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Attempt",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/payment-attempts/{{attempt_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "payment-attempts", "{{attempt_id}}"],
+              "variable": [{"key": "attempt_id", "value": ""}]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [{"key": "token", "value": "{{api_token}}", "type": "string"}]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Mark Success",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"channel_transaction_id\": \"txn_123456\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/payment-attempts/{{attempt_id}}/success",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "payment-attempts", "{{attempt_id}}", "success"],
+              "variable": [{"key": "attempt_id", "value": ""}]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [{"key": "token", "value": "{{api_token}}", "type": "string"}]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Mark Failed",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/payment-attempts/{{attempt_id}}/fail",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "payment-attempts", "{{attempt_id}}", "fail"],
+              "variable": [{"key": "attempt_id", "value": ""}]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [{"key": "token", "value": "{{api_token}}", "type": "string"}]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

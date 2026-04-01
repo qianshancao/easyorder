@@ -1,0 +1,243 @@
+{
+  "_postman_id": "orders-collection-uuid-001",
+  "name": "Orders",
+  "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+  "item": [
+    {
+      "name": "Admin",
+      "item": [
+        {
+          "name": "List All Orders",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/orders/admin/all?status=&type=&external_user_id=&subscription_id=",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "orders", "admin", "all"],
+              "query": [
+                {"key": "status", "value": "", "description": "Optional: Filter by status"},
+                {"key": "type", "value": "", "description": "Optional: Filter by type"},
+                {"key": "external_user_id", "value": "", "description": "Optional: Filter by external user ID"},
+                {"key": "subscription_id", "value": "", "description": "Optional: Filter by subscription ID"}
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [{"key": "token", "value": "{{admin_token}}", "type": "string"}]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Order (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/orders/admin/{{order_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "orders", "admin", "{{order_id}}"],
+              "variable": [{"key": "order_id", "value": ""}]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [{"key": "token", "value": "{{admin_token}}", "type": "string"}]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Cancel Order (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {"mode": "raw", "raw": "{}"},
+            "url": {
+              "raw": "{{base_url}}/api/v1/orders/admin/{{order_id}}/cancel",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "orders", "admin", "{{order_id}}", "cancel"],
+              "variable": [{"key": "order_id", "value": ""}]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [{"key": "token", "value": "{{admin_token}}", "type": "string"}]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Business",
+      "item": [
+        {
+          "name": "Create Order",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"external_user_id\": \"user_001\",\n  \"type\": \"one_time\",\n  \"amount\": 1000,\n  \"currency\": \"CNY\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/orders/",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "orders", ""]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [{"key": "token", "value": "{{api_token}}", "type": "string"}]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 201\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "var jsonData = pm.response.json();",
+                  "pm.environment.set(\"order_id\", jsonData.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "One-Time Purchase",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"external_user_id\": \"user_001\",\n  \"amount\": 2000,\n  \"currency\": \"CNY\",\n  \"channel\": \"alipay\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/orders/one-time-pay",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "orders", "one-time-pay"]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [{"key": "token", "value": "{{api_token}}", "type": "string"}]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var jsonData = pm.response.json();",
+                  "pm.environment.set(\"one_time_order_id\", jsonData.order.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List by User",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/orders/by-user/user_001",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "orders", "by-user", "user_001"]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [{"key": "token", "value": "{{api_token}}", "type": "string"}]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List by Subscription",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/orders/by-subscription/{{subscription_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "orders", "by-subscription", "{{subscription_id}}"],
+              "variable": [{"key": "subscription_id", "value": ""}]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [{"key": "token", "value": "{{api_token}}", "type": "string"}]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Order",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/orders/{{order_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "orders", "{{order_id}}"],
+              "variable": [{"key": "order_id", "value": ""}]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [{"key": "token", "value": "{{api_token}}", "type": "string"}]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Pay Order",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"channel\": \"alipay\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/orders/{{order_id}}/pay",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "orders", "{{order_id}}", "pay"],
+              "variable": [{"key": "order_id", "value": ""}]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [{"key": "token", "value": "{{api_token}}", "type": "string"}]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Cancel Order",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {"mode": "raw", "raw": "{}"},
+            "url": {
+              "raw": "{{base_url}}/api/v1/orders/{{order_id}}/cancel",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "orders", "{{order_id}}", "cancel"],
+              "variable": [{"key": "order_id", "value": ""}]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [{"key": "token", "value": "{{api_token}}", "type": "string"}]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,186 @@
+{
+  "_postman_id": "oauth-clients-collection",
+  "name": "OAuth Clients",
+  "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+  "_postman_variable_scope": "collection",
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{admin_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "Create OAuth Client",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"name\": \"Test Client\"}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/v1/oauth-clients/",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "oauth-clients", ""]
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{admin_token}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const res = pm.response.json();",
+              "pm.environment.set(\"oauth_client_id\", res.client_id);",
+              "pm.environment.set(\"oauth_client_secret\", res.client_secret);",
+              "pm.test(\"Status is 201\", () => pm.response.to.have.status(201));",
+              "pm.test(\"Has client_id\", () => pm.expect(res.client_id).to.be.a('string'));",
+              "pm.test(\"Has client_secret\", () => pm.expect(res.client_secret).to.be.a('string'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "List OAuth Clients",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/v1/oauth-clients/",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "oauth-clients", ""]
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{admin_token}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+              "pm.test(\"Response is array\", () => pm.expect(pm.response.json()).to.be.an('array'));",
+              "const clients = pm.response.json();",
+              "if (clients.length > 0) {",
+              "    pm.environment.set(\"oauth_client_db_id\", clients[0].id);",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Update Client Status",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/v1/oauth-clients/{{oauth_client_db_id}}/status?new_status=inactive",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "oauth-clients", "{{oauth_client_db_id}}", "status"],
+          "query": [
+            {
+              "key": "new_status",
+              "value": "inactive"
+            }
+          ]
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{admin_token}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Regenerate Secret",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/v1/oauth-clients/{{oauth_client_db_id}}/regenerate",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "oauth-clients", "{{oauth_client_db_id}}", "regenerate"]
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{admin_token}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const res = pm.response.json();",
+              "pm.environment.set(\"oauth_client_secret\", res.client_secret);",
+              "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "id": "env-dev-easyorder",
+  "name": "dev",
+  "values": [
+    {"key": "base_url", "value": "http://localhost:6000", "type": "default", "enabled": true},
+    {"key": "observability_url", "value": "http://localhost", "type": "default", "enabled": true},
+    {"key": "admin_token", "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwicm9sZSI6InN1cGVyX2FkbWluIiwidHlwZSI6ImFkbWluIiwiZXhwIjoxNzc1MDMyNjA1fQ.9HzTyFC85mp1y-79tM4lBPpEBS1LvLCN-wKAmb0G8zI", "type": "any", "enabled": true},
+    {"key": "api_token", "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJzMGhiNGRDc1JteWE0NDRmNy1OS1ZMRFhPWEowNGU1Y2pwT2docXRjUkZNIiwidHlwZSI6ImFwaSIsImV4cCI6MTc3NTAzMjYzOH0.3_jY30Iz1oEEK5OifKf29d9rTBxNpvaZW_sS9MwDIsU", "type": "any", "enabled": true},
+    {"key": "admin_id", "value": "", "type": "any", "enabled": true},
+    {"key": "plan_id", "value": "", "type": "any", "enabled": true},
+    {"key": "plan_id_2", "value": "", "type": "any", "enabled": true},
+    {"key": "subscription_id", "value": "", "type": "any", "enabled": true},
+    {"key": "order_id", "value": "", "type": "any", "enabled": true},
+    {"key": "one_time_order_id", "value": "", "type": "any", "enabled": true},
+    {"key": "attempt_id", "value": "", "type": "any", "enabled": true},
+    {"key": "refund_id", "value": "", "type": "any", "enabled": true},
+    {"key": "oauth_client_id", "value": "s0hb4dCsRmya444f7-NKVLDXOXJ04e5cjpOghqtcRFM", "type": "any", "enabled": true},
+    {"key": "oauth_client_secret", "value": "GzUbnKmtBr0-ZfmVtVaPDxMX6xPShg5v1aRS1zhPDdgMQ-aGJPnpq6t1KjwthZEh", "type": "any", "enabled": true},
+    {"key": "config_id", "value": "", "type": "any", "enabled": true}
+  ],
+  "_postman_variable_scope": "environment",
+  "_postman_exported_at": "2026-04-01T00:00:00.000Z",
+  "_postman_exported_using": "Newman/5.x"
+}

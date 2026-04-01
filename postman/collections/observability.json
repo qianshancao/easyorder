@@ -1,0 +1,192 @@
+{
+  "_postman_id": "observability-collection-001",
+  "name": "Observability",
+  "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+  "item": [
+    {
+      "name": "VictoriaMetrics Health",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{observability_url}}:8428/health",
+          "host": ["{{observability_url}}"],
+          "port": "8428",
+          "path": ["health"]
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "VictoriaMetrics Query",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{observability_url}}:8428/api/v1/query?query=up",
+          "host": ["{{observability_url}}"],
+          "port": "8428",
+          "path": ["api", "v1", "query"],
+          "query": [
+            {
+              "key": "query",
+              "value": "up"
+            }
+          ]
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "VictoriaLogs Health",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{observability_url}}:9429/health",
+          "host": ["{{observability_url}}"],
+          "port": "9429",
+          "path": ["health"]
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "VictoriaLogs Query",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{observability_url}}:9429/select/logsql/query?query=*",
+          "host": ["{{observability_url}}"],
+          "port": "9429",
+          "path": ["select", "logsql", "query"],
+          "query": [
+            {
+              "key": "query",
+              "value": "*"
+            }
+          ]
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "VictoriaTraces Health",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{observability_url}}:9428/health",
+          "host": ["{{observability_url}}"],
+          "port": "9428",
+          "path": ["health"]
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Grafana Health",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{observability_url}}:3000/api/health",
+          "host": ["{{observability_url}}"],
+          "port": "3000",
+          "path": ["api", "health"]
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test(\"Response has database ok\", function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.database).to.eql(\"ok\");",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "observability_url",
+      "value": "http://localhost"
+    }
+  ]
+}

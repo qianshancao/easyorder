@@ -1,0 +1,127 @@
+{
+  "_postman_id": "system-configs-collection-004",
+  "name": "System Configs",
+  "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {"key": "token", "value": "{{admin_token}}", "type": "string"}
+    ]
+  },
+  "item": [
+    {
+      "name": "Create Config",
+      "request": {
+        "method": "POST",
+        "header": [
+          {"key": "Content-Type", "value": "application/json"}
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"key\": \"test_config_{{$randomInt}}\", \"value\": {\"seconds\": 300}, \"description\": \"Payment timeout in seconds\"}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/v1/system-configs/",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "system-configs", ""]
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status is 201 or 409\", () => {",
+              "    pm.expect([201, 409]).to.include(pm.response.code);",
+              "});",
+              "if (pm.response.code === 201) {",
+              "    const res = pm.response.json();",
+              "    pm.environment.set(\"config_id\", res.id);",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "List Configs",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/v1/system-configs/",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "system-configs", ""]
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get Config",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/v1/system-configs/{{config_id}}",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "system-configs", "{{config_id}}"]
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Update Config",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {"key": "Content-Type", "value": "application/json"}
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"value\": {\"seconds\": 600}}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/v1/system-configs/{{config_id}}",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "system-configs", "{{config_id}}"]
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
