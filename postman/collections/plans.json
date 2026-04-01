@@ -5,6 +5,147 @@
   "item": [
     {
       "name": "Create Plan",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.environment.set('requestStartTime', new Date().toISOString());",
+              "pm.environment.set('traceStartUs', Date.now() * 1000);"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// ========== Layer 1: HTTP Assertions ========",
+              "const res = pm.response.json();",
+              "",
+              "pm.test('[HTTP] Status is 201', function () {",
+              "    pm.response.to.have.status(201);",
+              "});",
+              "pm.test('[HTTP] Response has id (number)', function () {",
+              "    pm.expect(res.id).to.be.a('number');",
+              "});",
+              "pm.test('[HTTP] Response has correct name', function () {",
+              "    pm.expect(res.name).to.eql('Basic Plan');",
+              "});",
+              "pm.test('[HTTP] Response has correct cycle', function () {",
+              "    pm.expect(res.cycle).to.eql('monthly');",
+              "});",
+              "pm.test('[HTTP] Response has correct base_price', function () {",
+              "    pm.expect(res.base_price).to.eql(2900);",
+              "});",
+              "pm.test('[HTTP] Response status is active', function () {",
+              "    pm.expect(res.status).to.eql('active');",
+              "});",
+              "pm.test('[HTTP] Response has created_at (string)', function () {",
+              "    pm.expect(res.created_at).to.be.a('string');",
+              "});",
+              "",
+              "// Variable extraction",
+              "pm.environment.set('plan_id', res.id);",
+              "",
+              "// ========== Layer 2 & 3: Trace + Log Assertions (delayed for OTEL batch flush) ========",
+              "const vtUrl = pm.environment.get('observability_url') + ':9428';",
+              "const vlUrl = pm.environment.get('observability_url') + ':9429';",
+              "const traceStart = Number(pm.environment.get('traceStartUs')) - 5000000;",
+              "const traceEnd = Date.now() * 1000 + 60000000;",
+              "",
+              "setTimeout(function () {",
+              "    // ========== Layer 2: Trace Assertions ========",
+              "    pm.sendRequest({",
+              "        url: vtUrl + '/select/jaeger/api/traces?service=easyorder&start=' + traceStart + '&end=' + traceEnd + '&limit=5',",
+              "        method: 'GET'",
+              "    }, function (err, resp) {",
+              "        if (err) { console.log('[TRACE] Query error: ' + err); return; }",
+              "        const data = resp.json();",
+              "        const traces = (data.data || []).filter(function (t) {",
+              "            return (t.spans || []).some(function (s) {",
+              "                return s.operationName && s.operationName.indexOf('POST') !== -1 && s.operationName.indexOf('/plans') !== -1;",
+              "            });",
+              "        });",
+              "",
+              "        pm.test('[TRACE] Trace found for POST /api/v1/plans/', function () {",
+              "            pm.expect(traces.length).to.be.above(0);",
+              "        });",
+              "",
+              "        if (traces.length > 0) {",
+              "            const spans = traces[0].spans || [];",
+              "            const httpSpan = spans.find(function (s) {",
+              "                return s.operationName && s.operationName.indexOf('POST') === 0;",
+              "            });",
+              "            if (httpSpan) {",
+              "                const getTag = function (key) {",
+              "                    const t = (httpSpan.tags || []).find(function (tag) { return tag.key === key; });",
+              "                    return t ? t.value : undefined;",
+              "                };",
+              "                pm.test('[TRACE] Span has http.method = POST', function () {",
+              "                    pm.expect(getTag('http.method')).to.eql('POST');",
+              "                });",
+              "                pm.test('[TRACE] Span has http.status_code = 201', function () {",
+              "                    pm.expect(Number(getTag('http.status_code'))).to.eql(201);",
+              "                });",
+              "            }",
+              "            const errorSpans = spans.filter(function (s) {",
+              "                const t = (s.tags || []).find(function (tag) { return tag.key === 'otel.status_code'; });",
+              "                return t && t.value === 'ERROR';",
+              "            });",
+              "            pm.test('[TRACE] No error spans in trace', function () {",
+              "                pm.expect(errorSpans.length).to.eql(0);",
+              "            });",
+              "        }",
+              "    });",
+              "",
+              "    // ========== Layer 3: Log Assertions ========",
+              "    pm.sendRequest({",
+              "        url: vlUrl + '/select/logsql/query',",
+              "        method: 'POST',",
+              "        header: { 'Content-Type': 'application/x-www-form-urlencoded' },",
+              "        body: {",
+              "            mode: 'urlencoded',",
+              "            urlencoded: [",
+              "                { key: 'query', value: '_msg:=\"plan.created\"', type: 'text' },",
+              "                { key: 'limit', value: '10', type: 'text' }",
+              "            ]",
+              "        }",
+              "    }, function (err, resp) {",
+              "        if (err) { console.log('[LOG] Query error: ' + err); return; }",
+              "        const text = resp.text();",
+              "        if (!text || !text.trim()) {",
+              "            pm.test('[LOG] Event plan.created found', function () {",
+              "                pm.expect(false).to.be.true;",
+              "            });",
+              "            return;",
+              "        }",
+              "        const logs = text.trim().split('\\n').filter(function (l) { return l; }).map(function (l) {",
+              "            try { return JSON.parse(l); } catch (e) { return null; }",
+              "        }).filter(Boolean);",
+              "",
+              "        pm.test('[LOG] Event plan.created found', function () {",
+              "            pm.expect(logs.length).to.be.above(0);",
+              "        });",
+              "        if (logs.length > 0) {",
+              "            const log = logs[0];",
+              "            pm.test('[LOG] Event has plan_id field', function () {",
+              "                pm.expect(log.plan_id).to.be.ok;",
+              "            });",
+              "            pm.test('[LOG] Event has plan_name field', function () {",
+              "                pm.expect(log.plan_name).to.be.ok;",
+              "            });",
+              "            pm.test('[LOG] Event has cycle field', function () {",
+              "                pm.expect(log.cycle).to.be.ok;",
+              "            });",
+              "        }",
+              "    });",
+              "}, 6000);"
+            ]
+          }
+        }
+      ],
       "request": {
         "method": "POST",
         "header": [
@@ -21,23 +162,148 @@
           "path": ["api", "v1", "plans", ""]
         }
       },
-      "response": [],
+      "response": []
+    },
+    {
+      "name": "List Plans",
       "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.environment.set('requestStartTime', new Date().toISOString());",
+              "pm.environment.set('traceStartUs', Date.now() * 1000);"
+            ]
+          }
+        },
         {
           "listen": "test",
           "script": {
             "type": "text/javascript",
             "exec": [
+              "// ========== Layer 1: HTTP Assertions ========",
               "const res = pm.response.json();",
-              "pm.environment.set(\"plan_id\", res.id);",
-              "pm.test(\"Status is 201\", () => pm.response.to.have.status(201));"
+              "",
+              "pm.test('[HTTP] Status is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test('[HTTP] Response is array', function () {",
+              "    pm.expect(res).to.be.an('array');",
+              "});",
+              "pm.test('[HTTP] Array is not empty', function () {",
+              "    pm.expect(res.length).to.be.above(0);",
+              "});",
+              "pm.test('[HTTP] First item has id (number)', function () {",
+              "    pm.expect(res[0].id).to.be.a('number');",
+              "});",
+              "pm.test('[HTTP] First item has name (string)', function () {",
+              "    pm.expect(res[0].name).to.be.a('string').and.not.be.empty;",
+              "});",
+              "pm.test('[HTTP] First item has cycle (string)', function () {",
+              "    pm.expect(res[0].cycle).to.be.a('string').and.not.be.empty;",
+              "});",
+              "pm.test('[HTTP] First item has base_price (number)', function () {",
+              "    pm.expect(res[0].base_price).to.be.a('number');",
+              "});",
+              "pm.test('[HTTP] First item has status (string)', function () {",
+              "    pm.expect(res[0].status).to.be.a('string').and.not.be.empty;",
+              "});",
+              "",
+              "// ========== Layer 2 & 3: Trace + Log Assertions (delayed for OTEL batch flush) ========",
+              "const vtUrl = pm.environment.get('observability_url') + ':9428';",
+              "const vlUrl = pm.environment.get('observability_url') + ':9429';",
+              "const traceStart = Number(pm.environment.get('traceStartUs')) - 5000000;",
+              "const traceEnd = Date.now() * 1000 + 60000000;",
+              "",
+              "setTimeout(function () {",
+              "    // ========== Layer 2: Trace Assertions ========",
+              "    pm.sendRequest({",
+              "        url: vtUrl + '/select/jaeger/api/traces?service=easyorder&start=' + traceStart + '&end=' + traceEnd + '&limit=5',",
+              "        method: 'GET'",
+              "    }, function (err, resp) {",
+              "        if (err) { console.log('[TRACE] Query error: ' + err); return; }",
+              "        const data = resp.json();",
+              "        const traces = (data.data || []).filter(function (t) {",
+              "            return (t.spans || []).some(function (s) {",
+              "                return s.operationName && s.operationName.indexOf('GET') !== -1 && s.operationName.indexOf('/plans') !== -1;",
+              "            });",
+              "        });",
+              "",
+              "        pm.test('[TRACE] Trace found for GET /api/v1/plans/', function () {",
+              "            pm.expect(traces.length).to.be.above(0);",
+              "        });",
+              "",
+              "        if (traces.length > 0) {",
+              "            const spans = traces[0].spans || [];",
+              "            const httpSpan = spans.find(function (s) {",
+              "                return s.operationName && s.operationName.indexOf('GET') === 0 && s.operationName.indexOf('/plans') !== -1;",
+              "            });",
+              "            if (httpSpan) {",
+              "                const getTag = function (key) {",
+              "                    const t = (httpSpan.tags || []).find(function (tag) { return tag.key === key; });",
+              "                    return t ? t.value : undefined;",
+              "                };",
+              "                pm.test('[TRACE] Span has http.method = GET', function () {",
+              "                    pm.expect(getTag('http.method')).to.eql('GET');",
+              "                });",
+              "                pm.test('[TRACE] Span has http.status_code = 200', function () {",
+              "                    pm.expect(Number(getTag('http.status_code'))).to.eql(200);",
+              "                });",
+              "            }",
+              "            const errorSpans = spans.filter(function (s) {",
+              "                const t = (s.tags || []).find(function (tag) { return tag.key === 'otel.status_code'; });",
+              "                return t && t.value === 'ERROR';",
+              "            });",
+              "            pm.test('[TRACE] No error spans in trace', function () {",
+              "                pm.expect(errorSpans.length).to.eql(0);",
+              "            });",
+              "        }",
+              "    });",
+              "",
+              "    // ========== Layer 3: Log Assertions ========",
+              "    pm.sendRequest({",
+              "        url: vlUrl + '/select/logsql/query',",
+              "        method: 'POST',",
+              "        header: { 'Content-Type': 'application/x-www-form-urlencoded' },",
+              "        body: {",
+              "            mode: 'urlencoded',",
+              "            urlencoded: [",
+              "                { key: 'query', value: '_msg:=\"plan.listed\"', type: 'text' },",
+              "                { key: 'limit', value: '10', type: 'text' }",
+              "            ]",
+              "        }",
+              "    }, function (err, resp) {",
+              "        if (err) { console.log('[LOG] Query error: ' + err); return; }",
+              "        const text = resp.text();",
+              "        if (!text || !text.trim()) {",
+              "            pm.test('[LOG] Event plan.listed found', function () {",
+              "                pm.expect(false).to.be.true;",
+              "            });",
+              "            return;",
+              "        }",
+              "        const logs = text.trim().split('\\n').filter(function (l) { return l; }).map(function (l) {",
+              "            try { return JSON.parse(l); } catch (e) { return null; }",
+              "        }).filter(Boolean);",
+              "",
+              "        pm.test('[LOG] Event plan.listed found', function () {",
+              "            pm.expect(logs.length).to.be.above(0);",
+              "        });",
+              "        if (logs.length > 0) {",
+              "            const log = logs[0];",
+              "            pm.test('[LOG] Event has count field (number)', function () {",
+              "                pm.expect(log.count).to.be.a('number');",
+              "            });",
+              "            pm.test('[LOG] count >= 1', function () {",
+              "                pm.expect(log.count).to.be.at.least(1);",
+              "            });",
+              "        }",
+              "    });",
+              "}, 6000);"
             ]
           }
         }
-      ]
-    },
-    {
-      "name": "List Plans",
+      ],
       "request": {
         "method": "GET",
         "header": [
@@ -49,22 +315,105 @@
           "path": ["api", "v1", "plans", ""]
         }
       },
-      "response": [],
+      "response": []
+    },
+    {
+      "name": "Get Plan",
       "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.environment.set('requestStartTime', new Date().toISOString());",
+              "pm.environment.set('traceStartUs', Date.now() * 1000);"
+            ]
+          }
+        },
         {
           "listen": "test",
           "script": {
             "type": "text/javascript",
             "exec": [
-              "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
-              "pm.test(\"Response is array\", () => pm.expect(pm.response.json()).to.be.an('array'));"
+              "// ========== Layer 1: HTTP Assertions ========",
+              "const res = pm.response.json();",
+              "const planId = Number(pm.environment.get('plan_id'));",
+              "",
+              "pm.test('[HTTP] Status is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test('[HTTP] Response id matches plan_id', function () {",
+              "    pm.expect(res.id).to.eql(planId);",
+              "});",
+              "pm.test('[HTTP] Response has correct name', function () {",
+              "    pm.expect(res.name).to.eql('Basic Plan');",
+              "});",
+              "pm.test('[HTTP] Response has correct cycle', function () {",
+              "    pm.expect(res.cycle).to.eql('monthly');",
+              "});",
+              "pm.test('[HTTP] Response has correct base_price', function () {",
+              "    pm.expect(res.base_price).to.eql(2900);",
+              "});",
+              "pm.test('[HTTP] Response status is active', function () {",
+              "    pm.expect(res.status).to.eql('active');",
+              "});",
+              "pm.test('[HTTP] Response has created_at (string)', function () {",
+              "    pm.expect(res.created_at).to.be.a('string');",
+              "});",
+              "",
+              "// ========== Layer 2: Trace Assertions (delayed for OTEL batch flush) ========",
+              "const vtUrl = pm.environment.get('observability_url') + ':9428';",
+              "const traceStart = Number(pm.environment.get('traceStartUs')) - 5000000;",
+              "const traceEnd = Date.now() * 1000 + 60000000;",
+              "",
+              "setTimeout(function () {",
+              "    pm.sendRequest({",
+              "        url: vtUrl + '/select/jaeger/api/traces?service=easyorder&start=' + traceStart + '&end=' + traceEnd + '&limit=5',",
+              "        method: 'GET'",
+              "    }, function (err, resp) {",
+              "        if (err) { console.log('[TRACE] Query error: ' + err); return; }",
+              "        const data = resp.json();",
+              "        const traces = (data.data || []).filter(function (t) {",
+              "            return (t.spans || []).some(function (s) {",
+              "                return s.operationName && s.operationName.indexOf('GET') !== -1 && s.operationName.indexOf('/plans/' + planId) !== -1;",
+              "            });",
+              "        });",
+              "",
+              "        pm.test('[TRACE] Trace found for GET /api/v1/plans/{plan_id}', function () {",
+              "            pm.expect(traces.length).to.be.above(0);",
+              "        });",
+              "",
+              "        if (traces.length > 0) {",
+              "            const spans = traces[0].spans || [];",
+              "            const httpSpan = spans.find(function (s) {",
+              "                return s.operationName && s.operationName.indexOf('GET') === 0 && s.operationName.indexOf('/plans/' + planId) !== -1;",
+              "            });",
+              "            if (httpSpan) {",
+              "                const getTag = function (key) {",
+              "                    const t = (httpSpan.tags || []).find(function (tag) { return tag.key === key; });",
+              "                    return t ? t.value : undefined;",
+              "                };",
+              "                pm.test('[TRACE] Span has http.method = GET', function () {",
+              "                    pm.expect(getTag('http.method')).to.eql('GET');",
+              "                });",
+              "                pm.test('[TRACE] Span has http.status_code = 200', function () {",
+              "                    pm.expect(Number(getTag('http.status_code'))).to.eql(200);",
+              "                });",
+              "            }",
+              "            const errorSpans = spans.filter(function (s) {",
+              "                const t = (s.tags || []).find(function (tag) { return tag.key === 'otel.status_code'; });",
+              "                return t && t.value === 'ERROR';",
+              "            });",
+              "            pm.test('[TRACE] No error spans in trace', function () {",
+              "                pm.expect(errorSpans.length).to.eql(0);",
+              "            });",
+              "        }",
+              "    });",
+              "}, 6000);"
             ]
           }
         }
-      ]
-    },
-    {
-      "name": "Get Plan",
+      ],
       "request": {
         "method": "GET",
         "header": [
@@ -76,16 +425,195 @@
           "path": ["api", "v1", "plans", "{{plan_id}}"]
         }
       },
-      "response": [],
-      "event": [
+      "response": []
+    },
+    {
+      "name": "Error Cases",
+      "item": [
         {
-          "listen": "test",
-          "script": {
-            "type": "text/javascript",
-            "exec": [
-              "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));"
-            ]
-          }
+          "name": "Create Plan - Missing Fields",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.environment.set('requestStartTime', new Date().toISOString());",
+                  "pm.environment.set('traceStartUs', Date.now() * 1000);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const res = pm.response.json();",
+                  "",
+                  "pm.test('[HTTP] Status is 422', function () {",
+                  "    pm.response.to.have.status(422);",
+                  "});",
+                  "pm.test('[HTTP] Response has detail array', function () {",
+                  "    pm.expect(res.detail).to.be.an('array');",
+                  "});",
+                  "pm.test('[HTTP] Detail contains validation error for missing fields', function () {",
+                  "    pm.expect(res.detail.length).to.be.above(0);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "Authorization", "value": "Bearer {{admin_token}}"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\": \"Incomplete Plan\"}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/plans/",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "plans", ""]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Plan - No Auth",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.environment.set('requestStartTime', new Date().toISOString());",
+                  "pm.environment.set('traceStartUs', Date.now() * 1000);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('[HTTP] Status is 401', function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});",
+                  "pm.test('[HTTP] Response has detail field', function () {",
+                  "    pm.expect(pm.response.json().detail).to.be.ok;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\": \"Unauthorized Plan\", \"cycle\": \"monthly\", \"base_price\": 1000}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/plans/",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "plans", ""]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Plan - Not Found",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.environment.set('requestStartTime', new Date().toISOString());",
+                  "pm.environment.set('traceStartUs', Date.now() * 1000);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// ========== Layer 1: HTTP Assertions ========",
+                  "const res = pm.response.json();",
+                  "",
+                  "pm.test('[HTTP] Status is 404', function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});",
+                  "pm.test('[HTTP] Response has detail Plan不存在', function () {",
+                  "    pm.expect(res.detail).to.eql('Plan\\u4e0d\\u5b58\\u5728');",
+                  "});",
+                  "",
+                  "// ========== Layer 3: Log Assertions (delayed for OTEL batch flush) ========",
+                  "const vlUrl = pm.environment.get('observability_url') + ':9429';",
+                  "",
+                  "setTimeout(function () {",
+                  "    pm.sendRequest({",
+                  "        url: vlUrl + '/select/logsql/query',",
+                  "        method: 'POST',",
+                  "        header: { 'Content-Type': 'application/x-www-form-urlencoded' },",
+                  "        body: {",
+                  "            mode: 'urlencoded',",
+                  "            urlencoded: [",
+                  "                { key: 'query', value: '_msg:=\"plan.not_found\"', type: 'text' },",
+                  "                { key: 'limit', value: '10', type: 'text' }",
+                  "            ]",
+                  "        }",
+                  "    }, function (err, resp) {",
+                  "        if (err) { console.log('[LOG] Query error: ' + err); return; }",
+                  "        const text = resp.text();",
+                  "        if (!text || !text.trim()) {",
+                  "            pm.test('[LOG] Event plan.not_found found', function () {",
+                  "                pm.expect(false).to.be.true;",
+                  "            });",
+                  "            return;",
+                  "        }",
+                  "        const logs = text.trim().split('\\n').filter(function (l) { return l; }).map(function (l) {",
+                  "            try { return JSON.parse(l); } catch (e) { return null; }",
+                  "        }).filter(Boolean);",
+              "",
+              "        // Filter for the specific plan_id (999999) to avoid false positives",
+              "        const matchedLogs = logs.filter(function (l) {",
+              "            return l.plan_id === 999999;",
+              "        });",
+              "",
+              "        pm.test('[LOG] Event plan.not_found found for plan_id=999999', function () {",
+              "            pm.expect(matchedLogs.length).to.be.above(0);",
+              "        });",
+              "        if (matchedLogs.length > 0) {",
+              "            const log = matchedLogs[0];",
+              "            pm.test('[LOG] Event has plan_id field', function () {",
+              "                pm.expect(log.plan_id).to.eql(999999);",
+              "            });",
+              "        }",
+              "    });",
+              "}, 6000);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{api_token}}"}
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/plans/999999",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "plans", "999999"]
+            }
+          },
+          "response": []
         }
       ]
     }
