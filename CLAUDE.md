@@ -9,7 +9,6 @@
 
 - 涉及 service/repo/api 层划分、依赖注入、schema 设计 → 读取 [架构规范](docs/conventions/architecture.md)
 - 添加或修改 logger 调用 → 读取 [日志规范](docs/conventions/logging.md)
-- 启动 Docker 可观测性栈、查看日志/指标 → 读取 [可观测性栈](docs/conventions/observability.md)
 
 ## 常用命令
 

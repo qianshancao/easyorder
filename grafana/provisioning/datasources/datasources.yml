@@ -1,0 +1,18 @@
+apiVersion: 1
+
+datasources:
+  - name: VictoriaMetrics
+    type: prometheus
+    url: http://victoriametrics:8428
+    isDefault: true
+    editable: false
+
+  - name: VictoriaLogs
+    type: victorialogs-datasource
+    url: http://victorialogs:9429
+    editable: false
+
+  - name: VictoriaTraces
+    type: tempo
+    url: http://victoriatraces:9428
+    editable: false
