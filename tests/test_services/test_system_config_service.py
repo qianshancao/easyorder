@@ -17,7 +17,7 @@ class TestSystemConfigServiceCreateConfig:
 
 
 class TestSystemConfigServiceUpdateConfig:
-    def test_success(self, mock_system_config_repository) -> None:
+    def test_updates_value_for_existing_config(self, mock_system_config_repository) -> None:
         existing = _make_config_mock()
         mock_system_config_repository.get_by_id.return_value = existing
         mock_system_config_repository.update.side_effect = lambda e: e

@@ -28,7 +28,7 @@ class TestOAuthClientServiceCreateClient:
 
 
 class TestOAuthClientServiceRegenerateSecret:
-    def test_success(self, mock_oauth_client_repository) -> None:
+    def test_returns_new_secret_for_existing_client(self, mock_oauth_client_repository) -> None:
         existing = _make_client_mock(client_secret="old_hash")
         mock_oauth_client_repository.get_by_id.return_value = existing
         mock_oauth_client_repository.update.side_effect = lambda e: e
@@ -47,7 +47,7 @@ class TestOAuthClientServiceRegenerateSecret:
 
 
 class TestOAuthClientServiceUpdateStatus:
-    def test_success(self, mock_oauth_client_repository) -> None:
+    def test_updates_status_for_existing_client(self, mock_oauth_client_repository) -> None:
         client = _make_client_mock(status="active")
         mock_oauth_client_repository.get_by_id.return_value = client
         mock_oauth_client_repository.update.side_effect = lambda e: e

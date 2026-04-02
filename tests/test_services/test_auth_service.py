@@ -79,7 +79,7 @@ class TestAuthServiceVerifyToken:
 
 
 class TestAuthServiceGetAdminByToken:
-    def test_success(self) -> None:
+    def test_returns_admin_for_valid_admin_token(self) -> None:
         mock_admin_repo = MagicMock()
         admin = _make_admin_mock()
         mock_admin_repo.get_by_id.return_value = admin
@@ -101,7 +101,7 @@ class TestAuthServiceGetAdminByToken:
 
 
 class TestAuthServiceGetApiClientByToken:
-    def test_success(self) -> None:
+    def test_returns_client_for_valid_api_token(self) -> None:
         mock_oauth_repo = MagicMock()
         client = _make_oauth_client_mock()
         mock_oauth_repo.get_by_client_id.return_value = client
@@ -119,7 +119,7 @@ class TestAuthServiceGetApiClientByToken:
 
 
 class TestAuthServiceAuthenticateAdmin:
-    def test_success(self) -> None:
+    def test_returns_admin_with_correct_credentials(self) -> None:
         mock_admin_repo = MagicMock()
         admin = _make_admin_mock()
         mock_admin_repo.get_by_username.return_value = admin
@@ -152,7 +152,7 @@ class TestAuthServiceAuthenticateAdmin:
 
 
 class TestAuthServiceAuthenticateOAuthClient:
-    def test_success(self) -> None:
+    def test_returns_client_with_correct_credentials(self) -> None:
         mock_oauth_repo = MagicMock()
         client = _make_oauth_client_mock()
         mock_oauth_repo.get_by_client_id.return_value = client

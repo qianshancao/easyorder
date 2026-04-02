@@ -266,7 +266,7 @@ def _one_time_pay(
 class TestOneTimePurchase:
     """POST /api/v1/orders/one-time-pay 一体化购买端点。"""
 
-    def test_success(self, client: TestClient, api_client_token_headers: dict[str, str]) -> None:
+    def test_one_time_purchase_returns_order(self, client: TestClient, api_client_token_headers: dict[str, str]) -> None:
         resp = client.post(
             "/api/v1/orders/one-time-pay",
             json={
