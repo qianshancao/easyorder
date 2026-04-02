@@ -52,6 +52,7 @@ services:
       - "--httpListenAddr=:9428"
       - "--insert.indexFlushInterval=3s"
       - "--search.latencyOffset=5s"
+      - "--http.disableResponseCompression"
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://127.0.0.1:9428/health"]
       start_period: 10s
