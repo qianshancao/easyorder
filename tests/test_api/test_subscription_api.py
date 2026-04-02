@@ -3,18 +3,7 @@
 
 from fastapi.testclient import TestClient
 
-
-def _create_plan(client: TestClient, headers: dict[str, str], **overrides: object) -> dict[str, object]:
-    """Helper to create a plan with auth and return its JSON data."""
-    defaults: dict[str, object] = {
-        "name": "Basic Plan",
-        "cycle": "monthly",
-        "base_price": 3000,
-    }
-    defaults.update(overrides)
-    resp = client.post("/api/v1/plans/", json=defaults, headers=headers)
-    assert resp.status_code == 201
-    return resp.json()
+from .conftest import _create_plan
 
 
 class TestCreateSubscription:

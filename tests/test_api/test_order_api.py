@@ -2,44 +2,12 @@
 
 from fastapi.testclient import TestClient
 
-
-def _create_plan(client: TestClient, headers: dict[str, str], **overrides: object) -> dict[str, object]:
-    defaults: dict[str, object] = {
-        "name": "Basic Plan",
-        "cycle": "monthly",
-        "base_price": 3000,
-    }
-    defaults.update(overrides)
-    resp = client.post("/api/v1/plans/", json=defaults, headers=headers)
-    assert resp.status_code == 201
-    return resp.json()
-
-
-def _create_subscription(client: TestClient, plan_id: int, api_headers: dict[str, str]) -> dict[str, object]:
-    resp = client.post(
-        "/api/v1/subscriptions/",
-        json={"external_user_id": "user_001", "plan_id": plan_id},
-        headers=api_headers,
-    )
-    assert resp.status_code == 201
-    return resp.json()
-
-
-def _create_one_time_order(client: TestClient, api_headers: dict[str, str], **overrides: object) -> dict[str, object]:
-    defaults: dict[str, object] = {
-        "external_user_id": "user_001",
-        "type": "one_time",
-        "amount": 3000,
-    }
-    defaults.update(overrides)
-    resp = client.post("/api/v1/orders/", json=defaults, headers=api_headers)
-    assert resp.status_code == 201
-    return resp.json()
+from .conftest import _create_order, _create_plan, _create_subscription
 
 
 class TestCreateOrder:
     def test_create_one_time(self, client: TestClient, api_client_token_headers: dict[str, str]) -> None:
-        data = _create_one_time_order(client, api_client_token_headers)
+        data = _create_order(client, api_client_token_headers)
 
         assert data["type"] == "one_time"
         assert data["status"] == "pending"
@@ -65,7 +33,7 @@ class TestCreateOrder:
 
 class TestGetOrder:
     def test_get_found(self, client: TestClient, api_client_token_headers: dict[str, str]) -> None:
-        order = _create_one_time_order(client, api_client_token_headers)
+        order = _create_order(client, api_client_token_headers)
 
         resp = client.get(f"/api/v1/orders/{order['id']}", headers=api_client_token_headers)
         assert resp.status_code == 200
@@ -78,7 +46,7 @@ class TestGetOrder:
 
 class TestListByUser:
     def test_returns_orders(self, client: TestClient, api_client_token_headers: dict[str, str]) -> None:
-        _create_one_time_order(client, api_client_token_headers)
+        _create_order(client, api_client_token_headers)
 
         resp = client.get("/api/v1/orders/by-user/user_001", headers=api_client_token_headers)
         assert resp.status_code == 200
@@ -107,7 +75,7 @@ class TestListBySubscription:
 
 class TestMarkAsPaid:
     def test_pay_success(self, client: TestClient, api_client_token_headers: dict[str, str]) -> None:
-        order = _create_one_time_order(client, api_client_token_headers)
+        order = _create_order(client, api_client_token_headers)
 
         resp = client.post(f"/api/v1/orders/{order['id']}/pay", headers=api_client_token_headers)
         assert resp.status_code == 200
@@ -115,7 +83,7 @@ class TestMarkAsPaid:
         assert resp.json()["paid_at"] is not None
 
     def test_pay_idempotent(self, client: TestClient, api_client_token_headers: dict[str, str]) -> None:
-        order = _create_one_time_order(client, api_client_token_headers)
+        order = _create_order(client, api_client_token_headers)
 
         # Pay twice
         client.post(f"/api/v1/orders/{order['id']}/pay", headers=api_client_token_headers)
@@ -137,7 +105,7 @@ class TestMarkAsPaid:
 
 class TestCancelOrder:
     def test_cancel_success(self, client: TestClient, api_client_token_headers: dict[str, str]) -> None:
-        order = _create_one_time_order(client, api_client_token_headers)
+        order = _create_order(client, api_client_token_headers)
 
         resp = client.post(f"/api/v1/orders/{order['id']}/cancel", headers=api_client_token_headers)
         assert resp.status_code == 200
@@ -148,14 +116,14 @@ class TestCancelOrder:
         assert resp.status_code == 404
 
     def test_cancel_paid_order_fails(self, client: TestClient, api_client_token_headers: dict[str, str]) -> None:
-        order = _create_one_time_order(client, api_client_token_headers)
+        order = _create_order(client, api_client_token_headers)
         client.post(f"/api/v1/orders/{order['id']}/pay", headers=api_client_token_headers)
 
         resp = client.post(f"/api/v1/orders/{order['id']}/cancel", headers=api_client_token_headers)
         assert resp.status_code == 422
 
     def test_cancel_idempotent(self, client: TestClient, api_client_token_headers: dict[str, str]) -> None:
-        order = _create_one_time_order(client, api_client_token_headers)
+        order = _create_order(client, api_client_token_headers)
         client.post(f"/api/v1/orders/{order['id']}/cancel", headers=api_client_token_headers)
 
         resp = client.post(f"/api/v1/orders/{order['id']}/cancel", headers=api_client_token_headers)
@@ -170,7 +138,7 @@ class TestAdminListAll:
         admin_token_headers: dict[str, str],
         api_client_token_headers: dict[str, str],
     ) -> None:
-        _create_one_time_order(client, api_client_token_headers)
+        _create_order(client, api_client_token_headers)
 
         resp = client.get("/api/v1/orders/admin/all", headers=admin_token_headers)
         assert resp.status_code == 200
@@ -182,7 +150,7 @@ class TestAdminListAll:
         admin_token_headers: dict[str, str],
         api_client_token_headers: dict[str, str],
     ) -> None:
-        order = _create_one_time_order(client, api_client_token_headers)
+        order = _create_order(client, api_client_token_headers)
         client.post(f"/api/v1/orders/{order['id']}/pay", headers=api_client_token_headers)
 
         resp = client.get("/api/v1/orders/admin/all?status=paid", headers=admin_token_headers)
@@ -195,7 +163,7 @@ class TestAdminListAll:
         admin_token_headers: dict[str, str],
         api_client_token_headers: dict[str, str],
     ) -> None:
-        _create_one_time_order(client, api_client_token_headers)
+        _create_order(client, api_client_token_headers)
 
         resp = client.get("/api/v1/orders/admin/all?type=one_time", headers=admin_token_headers)
         assert resp.status_code == 200
@@ -208,7 +176,7 @@ class TestAdminListAll:
         admin_token_headers: dict[str, str],
         api_client_token_headers: dict[str, str],
     ) -> None:
-        _create_one_time_order(client, api_client_token_headers, external_user_id="user_filter")
+        _create_order(client, api_client_token_headers, external_user_id="user_filter")
 
         resp = client.get("/api/v1/orders/admin/all?external_user_id=user_filter", headers=admin_token_headers)
         assert resp.status_code == 200
@@ -250,7 +218,7 @@ class TestAdminListAllFilters:
         admin_token_headers: dict[str, str],
         api_client_token_headers: dict[str, str],
     ) -> None:
-        order = _create_one_time_order(client, api_client_token_headers)
+        order = _create_order(client, api_client_token_headers)
 
         resp = client.get(f"/api/v1/orders/admin/{order['id']}", headers=admin_token_headers)
         assert resp.status_code == 200
@@ -268,7 +236,7 @@ class TestAdminCancelOrder:
         admin_token_headers: dict[str, str],
         api_client_token_headers: dict[str, str],
     ) -> None:
-        order = _create_one_time_order(client, api_client_token_headers)
+        order = _create_order(client, api_client_token_headers)
 
         resp = client.post(f"/api/v1/orders/admin/{order['id']}/cancel", headers=admin_token_headers)
         assert resp.status_code == 200

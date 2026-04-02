@@ -2,23 +2,7 @@
 
 from fastapi.testclient import TestClient
 
-
-def _build_plan_payload(**overrides: object) -> dict[str, object]:
-    """Helper to create a plan creation payload with sensible defaults."""
-    defaults: dict[str, object] = {
-        "name": "Basic Plan",
-        "cycle": "monthly",
-        "base_price": 3000,
-    }
-    defaults.update(overrides)
-    return defaults
-
-
-def _create_plan(client: TestClient, super_admin_headers: dict[str, str], **overrides: object) -> dict[str, object]:
-    """Helper to create a plan with super_admin auth and return its JSON data."""
-    resp = client.post("/api/v1/plans/", json=_build_plan_payload(**overrides), headers=super_admin_headers)
-    assert resp.status_code == 201
-    return resp.json()
+from .conftest import _build_plan_payload, _create_plan
 
 
 class TestCreatePlan:

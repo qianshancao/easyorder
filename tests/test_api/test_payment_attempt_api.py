@@ -2,17 +2,7 @@
 
 from fastapi.testclient import TestClient
 
-
-def _create_order(client: TestClient, api_headers: dict[str, str], **overrides: object) -> dict[str, object]:
-    defaults: dict[str, object] = {
-        "external_user_id": "user_001",
-        "type": "one_time",
-        "amount": 3000,
-    }
-    defaults.update(overrides)
-    resp = client.post("/api/v1/orders/", json=defaults, headers=api_headers)
-    assert resp.status_code == 201
-    return resp.json()
+from .conftest import _create_order
 
 
 def _create_attempt(
