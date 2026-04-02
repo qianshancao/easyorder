@@ -36,6 +36,7 @@ class TestAdminServiceUpdateAdmin:
         result = service.update_admin(1, AdminUpdate(display_name="New"))
         assert result is not None
         assert result.display_name == "New"
+        mock_admin_repository.update.assert_called_once()
 
     def test_update_admin_not_found(self, mock_admin_repository) -> None:
         mock_admin_repository.get_by_id.return_value = None
@@ -52,6 +53,7 @@ class TestAdminServiceUpdateAdmin:
         assert result is not None
         assert result.display_name == "New"
         assert result.role == "admin"  # unchanged
+        mock_admin_repository.update.assert_called_once()
 
 
 class TestAdminServiceChangePassword:

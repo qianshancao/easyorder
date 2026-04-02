@@ -101,11 +101,14 @@ class TestRenewalAdminAPI:
         data = response.json()
         # 验证订阅状态仍为 active
         assert data["status"] == "active"
-        # 验证周期已延长（通过比较新旧结束时间的差值接近30天）
+        # 验证周期延长约 30 天（月付 cycle）
         from datetime import datetime as dt
+
         end = dt.fromisoformat(data["current_period_end"])
-        # 由于时区问题，只验证 API 返回了合理的日期
-        assert end is not None
+        diff = (end.replace(tzinfo=None) if end.tzinfo else end) - (
+            original_end.replace(tzinfo=None) if original_end.tzinfo else original_end
+        )
+        assert abs(diff.total_seconds() - timedelta(days=30).total_seconds()) < 5
 
     def test_mark_renewal_success_forbidden_as_regular_admin(
         self, client, admin_token_headers

@@ -440,7 +440,7 @@ class TestProcessExpiredSubscriptions:
         mock_subscription_repository,
     ) -> None:
         """没有 past_due 订阅时返回 0。"""
-        mock_subscription_repository.get_by_id.return_value = None
+        mock_subscription_repository.get_past_due_subscriptions.return_value = []
 
         service = RenewalService(
             mock_subscription_repository,
@@ -448,12 +448,9 @@ class TestProcessExpiredSubscriptions:
             MagicMock(),
         )
 
-        # Query all subscriptions that are past_due
-        # Since we're mocking, we'll test the method returns 0 for non-existent subs
         result = service.process_expired_subscriptions(grace_period_days=7)
 
-        # This will be 0 because we didn't mock list_all to return anything
-        assert result >= 0
+        assert result == 0
 
 
 class TestRenewSingleSubscription:

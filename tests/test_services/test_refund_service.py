@@ -39,6 +39,15 @@ class TestCreateRefund:
                 RefundCreate(order_id=1, amount=0, reason="test", channel="alipay")
             )
 
+    def test_create_negative_amount_rejected_by_schema(
+        self, mock_refund_repository, mock_order_repository
+    ) -> None:
+        """负金额被 Pydantic schema 拒绝（ge=0 约束）。"""
+        from pydantic import ValidationError
+
+        with pytest.raises(ValidationError):
+            RefundCreate(order_id=1, amount=-1000, reason="test", channel="alipay")
+
     def test_create_order_not_found(self, mock_refund_repository, mock_order_repository) -> None:
         mock_order_repository.get_by_id.return_value = None
         service = RefundService(mock_refund_repository, mock_order_repository)

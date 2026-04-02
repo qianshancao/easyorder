@@ -10,7 +10,6 @@ class TestBaseRepositoryCreate:
         plan = Plan(name="Basic", cycle="monthly", base_price=999)
         created = repo.create(plan)
         assert created.id is not None
-        assert created.id == 1
 
     def test_create_persists_all_fields(self, db_session) -> None:
         repo = BaseRepository(Plan, db_session)

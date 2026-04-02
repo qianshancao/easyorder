@@ -102,6 +102,7 @@ class TestMarkAsSuccess:
 
         assert result.status == "success"
         assert result.channel_transaction_id == "txn_123"
+        mock_payment_attempt_repository.update.assert_called_once()
 
     def test_idempotent_already_success(self, mock_payment_attempt_repository, mock_order_repository) -> None:
         attempt = _make_attempt_mock(status="success", channel_transaction_id="txn_123")
