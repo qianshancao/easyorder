@@ -4,7 +4,6 @@ import os
 from collections.abc import Generator
 from unittest.mock import MagicMock
 
-import bcrypt
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import Engine, create_engine
@@ -29,6 +28,7 @@ from app.repositories.plan import PlanRepository
 from app.repositories.refund import RefundRepository
 from app.repositories.subscription import SubscriptionRepository
 from app.repositories.system_config import SystemConfigRepository
+from app.services.admin import _hash_password
 from app.services.auth import AuthService
 
 
@@ -181,10 +181,6 @@ def mock_refund_repository() -> MagicMock:
 
 
 # ── Auth token header fixtures (API layer) ──
-
-
-def _hash_password(password: str) -> str:
-    return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
 
 
 @pytest.fixture()

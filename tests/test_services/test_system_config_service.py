@@ -1,24 +1,9 @@
 """Tests for SystemConfigService."""
 
-from unittest.mock import MagicMock
-
-from app.models.system_config import SystemConfig
 from app.schemas.system_config import SystemConfigCreate, SystemConfigUpdate
 from app.services.system_config import SystemConfigService
 
-
-def _make_config_mock(**overrides) -> MagicMock:
-    defaults = {
-        "id": 1,
-        "key": "site.name",
-        "value": {"title": "EasyOrder"},
-        "description": "Site title",
-    }
-    defaults.update(overrides)
-    mock = MagicMock(spec=SystemConfig)
-    for k, v in defaults.items():
-        setattr(mock, k, v)
-    return mock
+from .conftest import _make_config_mock
 
 
 class TestSystemConfigServiceCreateConfig:

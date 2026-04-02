@@ -1,35 +1,14 @@
 """Tests for SubscriptionService."""
 
 from datetime import UTC, datetime, timedelta
-from unittest.mock import MagicMock
 
 import pytest
 
-from app.models.plan import Plan
 from app.schemas.subscription import SubscriptionCreate
 from app.services.proration import ProrationService
 from app.services.subscription import CYCLE_DURATION_DAYS, SubscriptionService
 
-from .conftest import _make_subscription_mock
-
-
-def _make_plan_mock(**overrides) -> MagicMock:
-    defaults = {
-        "id": 1,
-        "name": "Basic Plan",
-        "cycle": "monthly",
-        "base_price": 3000,
-        "introductory_price": None,
-        "trial_price": None,
-        "trial_duration": None,
-        "features": {"projects": 20},
-        "status": "active",
-    }
-    defaults.update(overrides)
-    mock = MagicMock(spec=Plan)
-    for k, v in defaults.items():
-        setattr(mock, k, v)
-    return mock
+from .conftest import _make_plan_mock, _make_subscription_mock
 
 
 class TestCreateSubscription:

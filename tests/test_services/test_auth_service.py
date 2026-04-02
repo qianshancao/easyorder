@@ -6,26 +6,9 @@ from unittest.mock import MagicMock
 import jwt
 
 from app.config import settings
-from app.models.oauth_client import OAuthClient
 from app.services.auth import AuthService
-from app.services.oauth_client import _hash_secret
 
-from .conftest import _make_admin_mock
-
-
-def _make_oauth_client_mock(**overrides) -> MagicMock:
-    defaults = {
-        "id": 1,
-        "client_id": "test_client_id",
-        "client_secret": _hash_secret("test_secret"),
-        "name": "Test Client",
-        "status": "active",
-    }
-    defaults.update(overrides)
-    mock = MagicMock(spec=OAuthClient)
-    for k, v in defaults.items():
-        setattr(mock, k, v)
-    return mock
+from .conftest import _make_admin_mock, _make_oauth_client_mock
 
 
 def _make_service(

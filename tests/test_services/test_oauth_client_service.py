@@ -1,27 +1,11 @@
 """Tests for OAuthClientService."""
 
-from unittest.mock import MagicMock
-
 import bcrypt
 
-from app.models.oauth_client import OAuthClient
 from app.schemas.oauth_client import OAuthClientCreate
 from app.services.oauth_client import OAuthClientService
 
-
-def _make_client_mock(**overrides) -> MagicMock:
-    defaults = {
-        "id": 1,
-        "client_id": "cid_abc",
-        "client_secret": "hashed_secret",
-        "name": "Test App",
-        "status": "active",
-    }
-    defaults.update(overrides)
-    mock = MagicMock(spec=OAuthClient)
-    for k, v in defaults.items():
-        setattr(mock, k, v)
-    return mock
+from .conftest import _make_oauth_client_mock as _make_client_mock
 
 
 class TestOAuthClientServiceCreateClient:

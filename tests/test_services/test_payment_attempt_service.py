@@ -1,32 +1,11 @@
 """Tests for PaymentAttemptService."""
 
-from datetime import UTC, datetime
-from unittest.mock import MagicMock
-
 import pytest
 
-from app.models.payment_attempt import PaymentAttempt
 from app.schemas.payment_attempt import PaymentAttemptCreate
 from app.services.payment_attempt import PaymentAttemptService
 
-from .conftest import _make_order_mock
-
-
-def _make_attempt_mock(**overrides) -> MagicMock:
-    defaults = {
-        "id": 1,
-        "order_id": 1,
-        "channel": "alipay",
-        "amount": 3000,
-        "status": "pending",
-        "channel_transaction_id": None,
-        "created_at": datetime.now(tz=UTC),
-    }
-    defaults.update(overrides)
-    mock = MagicMock(spec=PaymentAttempt)
-    for k, v in defaults.items():
-        setattr(mock, k, v)
-    return mock
+from .conftest import _make_attempt_mock, _make_order_mock
 
 
 class TestCreateAttempt:

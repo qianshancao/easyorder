@@ -11,20 +11,6 @@ from app.services.renewal import RenewalService
 from .conftest import _make_order_mock, _make_subscription_mock
 
 
-def _make_plan_mock(**overrides) -> MagicMock:
-    defaults = {
-        "id": 1,
-        "name": "Basic Plan",
-        "cycle": "monthly",
-        "base_price": 3000,
-    }
-    defaults.update(overrides)
-    mock = MagicMock()
-    for k, v in defaults.items():
-        setattr(mock, k, v)
-    return mock
-
-
 class TestProcessRenewals:
     """测试批量续费处理。"""
 
