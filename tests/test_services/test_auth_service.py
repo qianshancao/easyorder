@@ -6,6 +6,8 @@ from unittest.mock import MagicMock
 import jwt
 
 from app.config import settings
+from app.repositories.admin import AdminRepository
+from app.repositories.oauth_client import OAuthClientRepository
 from app.services.auth import AuthService
 
 from .conftest import _make_admin_mock, _make_oauth_client_mock
@@ -15,7 +17,10 @@ def _make_service(
     mock_admin_repo: MagicMock | None = None,
     mock_oauth_repo: MagicMock | None = None,
 ) -> AuthService:
-    return AuthService(mock_admin_repo or MagicMock(), mock_oauth_repo or MagicMock())
+    return AuthService(
+        mock_admin_repo or MagicMock(spec=AdminRepository),
+        mock_oauth_repo or MagicMock(spec=OAuthClientRepository),
+    )
 
 
 class TestAuthServiceCreateAdminToken:
@@ -80,7 +85,7 @@ class TestAuthServiceVerifyToken:
 
 class TestAuthServiceGetAdminByToken:
     def test_returns_admin_for_valid_admin_token(self) -> None:
-        mock_admin_repo = MagicMock()
+        mock_admin_repo = MagicMock(spec=AdminRepository)
         admin = _make_admin_mock()
         mock_admin_repo.get_by_id.return_value = admin
         service = _make_service(mock_admin_repo)
@@ -102,10 +107,10 @@ class TestAuthServiceGetAdminByToken:
 
 class TestAuthServiceGetApiClientByToken:
     def test_returns_client_for_valid_api_token(self) -> None:
-        mock_oauth_repo = MagicMock()
+        mock_oauth_repo = MagicMock(spec=OAuthClientRepository)
         client = _make_oauth_client_mock()
         mock_oauth_repo.get_by_client_id.return_value = client
-        service = _make_service(MagicMock(), mock_oauth_repo)
+        service = _make_service(MagicMock(spec=AdminRepository), mock_oauth_repo)
         token, _ = service.create_api_token(client)
         result = service.get_api_client_by_token(token)
         assert result is client
@@ -120,7 +125,7 @@ class TestAuthServiceGetApiClientByToken:
 
 class TestAuthServiceAuthenticateAdmin:
     def test_returns_admin_with_correct_credentials(self) -> None:
-        mock_admin_repo = MagicMock()
+        mock_admin_repo = MagicMock(spec=AdminRepository)
         admin = _make_admin_mock()
         mock_admin_repo.get_by_username.return_value = admin
         service = _make_service(mock_admin_repo)
@@ -128,7 +133,7 @@ class TestAuthServiceAuthenticateAdmin:
         assert result is admin
 
     def test_wrong_password(self) -> None:
-        mock_admin_repo = MagicMock()
+        mock_admin_repo = MagicMock(spec=AdminRepository)
         admin = _make_admin_mock()
         mock_admin_repo.get_by_username.return_value = admin
         service = _make_service(mock_admin_repo)
@@ -136,14 +141,14 @@ class TestAuthServiceAuthenticateAdmin:
         assert result is None
 
     def test_user_not_found(self) -> None:
-        mock_admin_repo = MagicMock()
+        mock_admin_repo = MagicMock(spec=AdminRepository)
         mock_admin_repo.get_by_username.return_value = None
         service = _make_service(mock_admin_repo)
         result = service.authenticate_admin("nobody", "password123")
         assert result is None
 
     def test_inactive_admin(self) -> None:
-        mock_admin_repo = MagicMock()
+        mock_admin_repo = MagicMock(spec=AdminRepository)
         admin = _make_admin_mock(status="inactive")
         mock_admin_repo.get_by_username.return_value = admin
         service = _make_service(mock_admin_repo)
@@ -153,32 +158,32 @@ class TestAuthServiceAuthenticateAdmin:
 
 class TestAuthServiceAuthenticateOAuthClient:
     def test_returns_client_with_correct_credentials(self) -> None:
-        mock_oauth_repo = MagicMock()
+        mock_oauth_repo = MagicMock(spec=OAuthClientRepository)
         client = _make_oauth_client_mock()
         mock_oauth_repo.get_by_client_id.return_value = client
-        service = _make_service(MagicMock(), mock_oauth_repo)
+        service = _make_service(MagicMock(spec=AdminRepository), mock_oauth_repo)
         result = service.authenticate_oauth_client("test_client_id", "test_secret")
         assert result is client
 
     def test_wrong_secret(self) -> None:
-        mock_oauth_repo = MagicMock()
+        mock_oauth_repo = MagicMock(spec=OAuthClientRepository)
         client = _make_oauth_client_mock()
         mock_oauth_repo.get_by_client_id.return_value = client
-        service = _make_service(MagicMock(), mock_oauth_repo)
+        service = _make_service(MagicMock(spec=AdminRepository), mock_oauth_repo)
         result = service.authenticate_oauth_client("test_client_id", "wrong_secret")
         assert result is None
 
     def test_client_not_found(self) -> None:
-        mock_oauth_repo = MagicMock()
+        mock_oauth_repo = MagicMock(spec=OAuthClientRepository)
         mock_oauth_repo.get_by_client_id.return_value = None
-        service = _make_service(MagicMock(), mock_oauth_repo)
+        service = _make_service(MagicMock(spec=AdminRepository), mock_oauth_repo)
         result = service.authenticate_oauth_client("nonexistent", "secret")
         assert result is None
 
     def test_inactive_client(self) -> None:
-        mock_oauth_repo = MagicMock()
+        mock_oauth_repo = MagicMock(spec=OAuthClientRepository)
         client = _make_oauth_client_mock(status="inactive")
         mock_oauth_repo.get_by_client_id.return_value = client
-        service = _make_service(MagicMock(), mock_oauth_repo)
+        service = _make_service(MagicMock(spec=AdminRepository), mock_oauth_repo)
         result = service.authenticate_oauth_client("test_client_id", "test_secret")
         assert result is None
