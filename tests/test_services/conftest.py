@@ -3,6 +3,8 @@
 from datetime import UTC, datetime, timedelta
 from unittest.mock import MagicMock
 
+import pytest
+
 from app.models.admin import Admin
 from app.models.oauth_client import OAuthClient
 from app.models.order import Order
@@ -151,3 +153,17 @@ def _make_attempt_mock(**overrides) -> MagicMock:
     for k, v in defaults.items():
         setattr(mock, k, v)
     return mock
+
+
+@pytest.fixture()
+def subscription_service(mock_subscription_repository, mock_plan_repository, mock_order_repository):
+    """SubscriptionService wired to mock repositories + fresh ProrationService."""
+    from app.services.proration import ProrationService
+    from app.services.subscription import SubscriptionService
+
+    return SubscriptionService(
+        mock_subscription_repository,
+        mock_plan_repository,
+        ProrationService(),
+        mock_order_repository,
+    )
