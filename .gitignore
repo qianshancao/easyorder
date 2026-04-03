@@ -11,6 +11,6 @@ wheels/
 .venv
 .env
 data/
-
+.vscode/
 # Test/coverage
 .coverage
