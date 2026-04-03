@@ -20,7 +20,6 @@ class PaymentAttemptResponse(BaseModel):
     channel: str
     amount: int
     status: str
-    channel_transaction_id: str | None
     created_at: datetime
     updated_at: datetime | None
 

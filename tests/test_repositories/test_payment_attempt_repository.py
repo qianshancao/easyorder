@@ -32,7 +32,6 @@ class TestPaymentAttemptRepositoryCreate:
         assert attempt.channel == "alipay"
         assert attempt.amount == 3000
         assert attempt.status == "pending"
-        assert attempt.channel_transaction_id is None
         assert attempt.created_at is not None
 
     def test_create_with_all_channels(self, payment_attempt_repository, db_session) -> None:

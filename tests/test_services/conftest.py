@@ -146,7 +146,6 @@ def _make_attempt_mock(**overrides) -> MagicMock:
         "channel": "alipay",
         "amount": 3000,
         "status": "pending",
-        "channel_transaction_id": None,
         "created_at": datetime.now(tz=UTC),
     }
     defaults.update(overrides)

@@ -135,13 +135,12 @@ class TestMarkAsSuccess:
         result = service.mark_as_success(1, "txn_123")
 
         assert result.status == "success"
-        assert result.channel_transaction_id == "txn_123"
         mock_payment_attempt_repository.update.assert_called_once()
 
     def test_idempotent_already_success(
         self, mock_payment_attempt_repository, mock_order_repository, mock_payment_transaction_service
     ) -> None:
-        attempt = _make_attempt_mock(status="success", channel_transaction_id="txn_123")
+        attempt = _make_attempt_mock(status="success")
         mock_payment_attempt_repository.get_by_id.return_value = attempt
         service = PaymentAttemptService(
             mock_payment_attempt_repository, mock_order_repository, mock_payment_transaction_service
@@ -150,7 +149,6 @@ class TestMarkAsSuccess:
         result = service.mark_as_success(1, "txn_456")
 
         assert result.status == "success"
-        assert result.channel_transaction_id == "txn_123"
         mock_payment_attempt_repository.update.assert_not_called()
 
     def test_invalid_from_failed(
@@ -247,7 +245,6 @@ class TestMarkSuccessAutoPayOrder:
         result = service.mark_as_success(1, "txn_auto_pay")
 
         assert result.status == "success"
-        assert result.channel_transaction_id == "txn_auto_pay"
         # Verify order_repo.update was called and order.status set to paid
         mock_order_repository.update.assert_called_once()
         updated_order = mock_order_repository.update.call_args[0][0]
@@ -287,7 +284,6 @@ class TestMarkSuccessAutoPayOrder:
         result = service.mark_as_success(1, "txn_no_order")
 
         assert result.status == "success"
-        assert result.channel_transaction_id == "txn_no_order"
         # order_repo.update should NOT be called (order not found)
         mock_order_repository.update.assert_not_called()
 
@@ -316,7 +312,7 @@ class TestMarkSuccessAutoPayOrder:
     def test_attempt_already_success_skips_order_update(
         self, mock_payment_attempt_repository, mock_order_repository, mock_payment_transaction_service
     ) -> None:
-        attempt = _make_attempt_mock(status="success", channel_transaction_id="txn_old")
+        attempt = _make_attempt_mock(status="success")
         mock_payment_attempt_repository.get_by_id.return_value = attempt
 
         service = PaymentAttemptService(
@@ -325,7 +321,6 @@ class TestMarkSuccessAutoPayOrder:
         result = service.mark_as_success(1, "txn_new")
 
         assert result.status == "success"
-        assert result.channel_transaction_id == "txn_old"
         # attempt already success: no repo calls at all
         mock_payment_attempt_repository.update.assert_not_called()
         mock_order_repository.get_by_id.assert_not_called()

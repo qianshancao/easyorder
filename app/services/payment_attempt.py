@@ -112,7 +112,6 @@ class PaymentAttemptService(BaseService[PaymentAttempt]):
             return attempt
         self._validate_transition(attempt.status, "success")
         attempt.status = "success"
-        attempt.channel_transaction_id = channel_transaction_id
         updated = self.repo.update(attempt)
         logger.info(
             "payment_attempt.success",

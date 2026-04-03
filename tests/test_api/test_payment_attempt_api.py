@@ -31,7 +31,6 @@ class TestCreateAttempt:
         assert data["channel"] == "alipay"
         assert data["amount"] == 3000
         assert data["status"] == "pending"
-        assert data["channel_transaction_id"] is None
 
     def test_create_order_not_found(self, client: TestClient, api_client_token_headers: dict[str, str]) -> None:
         resp = client.post(
@@ -124,7 +123,6 @@ class TestMarkAsSuccess:
         )
         assert resp.status_code == 200
         assert resp.json()["status"] == "success"
-        assert resp.json()["channel_transaction_id"] == "txn_123"
 
     def test_idempotent(self, client: TestClient, api_client_token_headers: dict[str, str]) -> None:
         order = _create_order(client, api_client_token_headers)

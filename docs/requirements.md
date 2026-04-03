@@ -156,8 +156,7 @@ PaymentAttempt
 ├── channel             → alipay / wechat / stripe
 ├── amount
 ├── status              → pending / success / failed
-├── created_at
-└── channel_transaction_id → 渠道方交易号（支付成功后回填）
+└── created_at
 ```
 
 ### 3.6 退款（Refund）
