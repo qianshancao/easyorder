@@ -18,17 +18,24 @@ class TestCreateSubscription:
         mock_order_repository,
         subscription_service,
     ) -> None:
-        plan = _make_plan_mock(trial_duration=7)
+        plan = _make_plan_mock(trial_price=0, trial_duration=7)
         mock_plan_repository.get_by_id.return_value = plan
         mock_subscription_repository.create.side_effect = lambda e: e
+        mock_order_repository.create.side_effect = lambda e: e
 
-        result = subscription_service.create_subscription(SubscriptionCreate(external_user_id="user_001", plan_id=1))
+        result_sub, result_order = subscription_service.create_subscription(
+            SubscriptionCreate(external_user_id="user_001", plan_id=1)
+        )
 
-        assert result.status == "trial"
-        assert result.external_user_id == "user_001"
-        assert result.plan_id == 1
-        assert result.plan_snapshot["name"] == "Basic Plan"
-        assert result.plan_snapshot["features"] == {"projects": 20}
+        assert result_sub.status == "trial"
+        assert result_sub.external_user_id == "user_001"
+        assert result_sub.plan_id == 1
+        assert result_sub.plan_snapshot["name"] == "Basic Plan"
+        assert result_sub.plan_snapshot["features"] == {"projects": 20}
+        assert result_order.type == "opening"
+        assert result_order.subscription_id == result_sub.id
+        assert result_order.amount == 0
+        assert result_order.status == "pending"
 
     def test_without_trial(
         self,
@@ -40,12 +47,35 @@ class TestCreateSubscription:
         plan = _make_plan_mock()
         mock_plan_repository.get_by_id.return_value = plan
         mock_subscription_repository.create.side_effect = lambda e: e
+        mock_order_repository.create.side_effect = lambda e: e
 
-        result = subscription_service.create_subscription(SubscriptionCreate(external_user_id="user_001", plan_id=1))
+        result_sub, result_order = subscription_service.create_subscription(
+            SubscriptionCreate(external_user_id="user_001", plan_id=1)
+        )
 
-        assert result.status == "active"
+        assert result_sub.status == "active"
         expected_end = datetime.now(tz=UTC) + timedelta(days=CYCLE_DURATION_DAYS["monthly"])
-        assert abs((result.current_period_end - expected_end).total_seconds()) < 5
+        assert abs((result_sub.current_period_end - expected_end).total_seconds()) < 5
+        assert result_order.type == "opening"
+        assert result_order.amount == 3000  # base_price
+
+    def test_with_introductory_price(
+        self,
+        mock_subscription_repository,
+        mock_plan_repository,
+        mock_order_repository,
+        subscription_service,
+    ) -> None:
+        plan = _make_plan_mock(introductory_price=1000)
+        mock_plan_repository.get_by_id.return_value = plan
+        mock_subscription_repository.create.side_effect = lambda e: e
+        mock_order_repository.create.side_effect = lambda e: e
+
+        _, result_order = subscription_service.create_subscription(
+            SubscriptionCreate(external_user_id="user_001", plan_id=1)
+        )
+
+        assert result_order.amount == 1000  # introductory_price
 
     def test_plan_not_found_raises(
         self,
@@ -82,10 +112,13 @@ class TestCreateSubscription:
         plan = _make_plan_mock(introductory_price=1000, trial_price=0, trial_duration=7, features={"storage": "10GB"})
         mock_plan_repository.get_by_id.return_value = plan
         mock_subscription_repository.create.side_effect = lambda e: e
+        mock_order_repository.create.side_effect = lambda e: e
 
-        result = subscription_service.create_subscription(SubscriptionCreate(external_user_id="user_001", plan_id=1))
+        result_sub, _ = subscription_service.create_subscription(
+            SubscriptionCreate(external_user_id="user_001", plan_id=1)
+        )
 
-        snap = result.plan_snapshot
+        snap = result_sub.plan_snapshot
         assert snap["base_price"] == 3000
         assert snap["introductory_price"] == 1000
         assert snap["trial_price"] == 0
@@ -102,11 +135,14 @@ class TestCreateSubscription:
         plan = _make_plan_mock(cycle="quarterly")
         mock_plan_repository.get_by_id.return_value = plan
         mock_subscription_repository.create.side_effect = lambda e: e
+        mock_order_repository.create.side_effect = lambda e: e
 
-        result = subscription_service.create_subscription(SubscriptionCreate(external_user_id="user_001", plan_id=1))
+        result_sub, _ = subscription_service.create_subscription(
+            SubscriptionCreate(external_user_id="user_001", plan_id=1)
+        )
 
-        expected_end = result.current_period_start + timedelta(days=90)
-        assert result.current_period_end == expected_end
+        expected_end = result_sub.current_period_start + timedelta(days=90)
+        assert result_sub.current_period_end == expected_end
 
     def test_yearly_cycle_period(
         self,
@@ -118,11 +154,14 @@ class TestCreateSubscription:
         plan = _make_plan_mock(cycle="yearly")
         mock_plan_repository.get_by_id.return_value = plan
         mock_subscription_repository.create.side_effect = lambda e: e
+        mock_order_repository.create.side_effect = lambda e: e
 
-        result = subscription_service.create_subscription(SubscriptionCreate(external_user_id="user_001", plan_id=1))
+        result_sub, _ = subscription_service.create_subscription(
+            SubscriptionCreate(external_user_id="user_001", plan_id=1)
+        )
 
-        expected_end = result.current_period_start + timedelta(days=365)
-        assert result.current_period_end == expected_end
+        expected_end = result_sub.current_period_start + timedelta(days=365)
+        assert result_sub.current_period_end == expected_end
 
 
 class TestGetSubscription:

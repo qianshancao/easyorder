@@ -43,7 +43,7 @@ class SubscriptionService(BaseService[Subscription]):
         self.proration_service = proration_service
         self.order_repo = order_repo
 
-    def create_subscription(self, data: SubscriptionCreate) -> Subscription:
+    def create_subscription(self, data: SubscriptionCreate) -> tuple[Subscription, Order]:
         plan = self.plan_repo.get_by_id(data.plan_id)
         if plan is None:
             raise ValueError(f"Plan {data.plan_id} not found")
@@ -52,23 +52,42 @@ class SubscriptionService(BaseService[Subscription]):
 
         snapshot = self._build_plan_snapshot(plan)
         now = datetime.now(tz=UTC)
+        is_trial = plan.trial_duration is not None and plan.trial_duration > 0
 
-        if plan.trial_duration is not None and plan.trial_duration > 0:
-            status = "trial"
-            period_end = now + timedelta(days=plan.trial_duration)
+        if is_trial:
+            sub_status = "trial"
+            period_end = now + timedelta(days=plan.trial_duration or 0)
         else:
-            status = "active"
+            sub_status = "active"
             period_end = now + timedelta(days=CYCLE_DURATION_DAYS.get(plan.cycle, 30))
 
         subscription = Subscription(
             external_user_id=data.external_user_id,
             plan_id=plan.id,
             plan_snapshot=snapshot,
-            status=status,
+            status=sub_status,
             current_period_start=now,
             current_period_end=period_end,
         )
         created = self.repo.create(subscription)
+
+        if is_trial:
+            order_amount = plan.trial_price or 0
+        elif plan.introductory_price is not None:
+            order_amount = plan.introductory_price
+        else:
+            order_amount = plan.base_price
+
+        order = Order(
+            external_user_id=created.external_user_id,
+            subscription_id=created.id,
+            type="opening",
+            amount=order_amount,
+            currency="CNY",
+            status="pending",
+        )
+        created_order = self.order_repo.create(order)
+
         logger.info(
             "subscription.created",
             extra={
@@ -76,9 +95,10 @@ class SubscriptionService(BaseService[Subscription]):
                 "external_user_id": created.external_user_id,
                 "plan_id": plan.id,
                 "status": created.status,
+                "order_id": created_order.id,
             },
         )
-        return created
+        return created, created_order
 
     def get_subscription(self, subscription_id: int) -> Subscription | None:
         return self.get(subscription_id)

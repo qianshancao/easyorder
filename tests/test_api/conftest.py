@@ -29,7 +29,7 @@ def _create_subscription(client: TestClient, plan_id: int, api_headers: dict[str
         headers=api_headers,
     )
     assert resp.status_code == 201
-    return resp.json()
+    return resp.json()["subscription"]
 
 
 def _create_order(client: TestClient, api_headers: dict[str, str], **overrides: object) -> dict[str, object]:

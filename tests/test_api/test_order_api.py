@@ -70,7 +70,8 @@ class TestListBySubscription:
 
         resp = client.get(f"/api/v1/orders/by-subscription/{sub['id']}", headers=api_client_token_headers)
         assert resp.status_code == 200
-        assert resp.json() == []
+        assert len(resp.json()) == 1
+        assert resp.json()[0]["type"] == "opening"
 
 
 class TestMarkAsPaid:
@@ -210,7 +211,8 @@ class TestAdminListAllFilters:
             headers=admin_token_headers,
         )
         assert resp.status_code == 200
-        assert resp.json() == []
+        assert len(resp.json()) == 1
+        assert resp.json()[0]["type"] == "opening"
 
     def test_get_found(
         self,

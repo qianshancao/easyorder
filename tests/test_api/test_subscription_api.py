@@ -22,10 +22,12 @@ class TestCreateSubscription:
 
         assert resp.status_code == 201
         data = resp.json()
-        assert data["status"] == "trial"
-        assert data["external_user_id"] == "user_001"
-        assert data["plan_id"] == plan["id"]
-        assert data["plan_snapshot"]["name"] == "Basic Plan"
+        assert data["subscription"]["status"] == "trial"
+        assert data["subscription"]["external_user_id"] == "user_001"
+        assert data["subscription"]["plan_id"] == plan["id"]
+        assert data["subscription"]["plan_snapshot"]["name"] == "Basic Plan"
+        assert data["order"]["type"] == "opening"
+        assert data["order"]["status"] == "pending"
 
     def test_create_without_trial(
         self,
@@ -39,7 +41,10 @@ class TestCreateSubscription:
         resp = client.post("/api/v1/subscriptions/", json=payload, headers=api_client_token_headers)
 
         assert resp.status_code == 201
-        assert resp.json()["status"] == "active"
+        data = resp.json()
+        assert data["subscription"]["status"] == "active"
+        assert data["order"]["type"] == "opening"
+        assert data["order"]["amount"] == 3000
 
     def test_create_plan_not_found(self, client: TestClient, api_client_token_headers: dict[str, str]) -> None:
         payload = {"external_user_id": "user_003", "plan_id": 99999}
@@ -72,7 +77,7 @@ class TestGetSubscription:
             json={"external_user_id": "user_001", "plan_id": plan["id"]},
             headers=api_client_token_headers,
         )
-        sub_id = create_resp.json()["id"]
+        sub_id = create_resp.json()["subscription"]["id"]
 
         resp = client.get(f"/api/v1/subscriptions/{sub_id}", headers=api_client_token_headers)
 
@@ -128,7 +133,7 @@ class TestCancelSubscription:
             json={"external_user_id": "user_001", "plan_id": plan["id"]},
             headers=api_client_token_headers,
         )
-        sub_id = create_resp.json()["id"]
+        sub_id = create_resp.json()["subscription"]["id"]
 
         resp = client.post(f"/api/v1/subscriptions/{sub_id}/cancel", headers=api_client_token_headers)
 
@@ -185,7 +190,7 @@ class TestAdminGetSubscription:
             json={"external_user_id": "user_001", "plan_id": plan["id"]},
             headers=api_client_token_headers,
         )
-        sub_id = create_resp.json()["id"]
+        sub_id = create_resp.json()["subscription"]["id"]
 
         resp = client.get(f"/api/v1/subscriptions/admin/{sub_id}", headers=admin_token_headers)
 
@@ -214,7 +219,7 @@ class TestAdminCancelSubscription:
             json={"external_user_id": "user_001", "plan_id": plan["id"]},
             headers=api_client_token_headers,
         )
-        sub_id = create_resp.json()["id"]
+        sub_id = create_resp.json()["subscription"]["id"]
 
         resp = client.post(f"/api/v1/subscriptions/admin/{sub_id}/cancel", headers=admin_token_headers)
 
@@ -243,7 +248,7 @@ class TestAdminReactivateSubscription:
             json={"external_user_id": "user_001", "plan_id": plan["id"]},
             headers=api_client_token_headers,
         )
-        sub_id = create_resp.json()["id"]
+        sub_id = create_resp.json()["subscription"]["id"]
 
         resp = client.post(f"/api/v1/subscriptions/admin/{sub_id}/reactivate", headers=admin_token_headers)
 
@@ -276,7 +281,7 @@ class TestUpgradeSubscription:
             json={"external_user_id": "user_001", "plan_id": plan_basic["id"]},
             headers=api_client_token_headers,
         )
-        sub_id = create_resp.json()["id"]
+        sub_id = create_resp.json()["subscription"]["id"]
 
         resp = client.post(
             f"/api/v1/subscriptions/{sub_id}/upgrade",
@@ -317,7 +322,7 @@ class TestUpgradeSubscription:
             json={"external_user_id": "user_001", "plan_id": plan["id"]},
             headers=api_client_token_headers,
         )
-        sub_id = create_resp.json()["id"]
+        sub_id = create_resp.json()["subscription"]["id"]
 
         resp = client.post(
             f"/api/v1/subscriptions/{sub_id}/upgrade",
@@ -360,7 +365,7 @@ class TestDowngradeSubscription:
             json={"external_user_id": "user_001", "plan_id": plan_pro["id"]},
             headers=api_client_token_headers,
         )
-        sub_id = create_resp.json()["id"]
+        sub_id = create_resp.json()["subscription"]["id"]
 
         resp = client.post(
             f"/api/v1/subscriptions/{sub_id}/downgrade",
@@ -402,7 +407,7 @@ class TestDowngradeSubscription:
             json={"external_user_id": "user_001", "plan_id": plan["id"]},
             headers=api_client_token_headers,
         )
-        sub_id = create_resp.json()["id"]
+        sub_id = create_resp.json()["subscription"]["id"]
 
         resp = client.post(
             f"/api/v1/subscriptions/{sub_id}/downgrade",

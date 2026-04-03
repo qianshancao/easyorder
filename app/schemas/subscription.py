@@ -24,6 +24,11 @@ class SubscriptionResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class SubscriptionCreateResponse(BaseModel):
+    subscription: SubscriptionResponse
+    order: OrderResponse
+
+
 class SubscriptionChangeRequest(BaseModel):
     new_plan_id: int
 

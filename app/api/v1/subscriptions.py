@@ -6,6 +6,7 @@ from app.schemas.subscription import (
     SubscriptionChangeRequest,
     SubscriptionChangeResponse,
     SubscriptionCreate,
+    SubscriptionCreateResponse,
     SubscriptionResponse,
 )
 from app.services.subscription import SubscriptionService
@@ -68,17 +69,20 @@ def admin_reactivate_subscription(
 # ── 业务 API (OAuth 客户端认证) ──
 
 
-@router.post("/", response_model=SubscriptionResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=SubscriptionCreateResponse, status_code=status.HTTP_201_CREATED)
 def create_subscription(
     data: SubscriptionCreate,
     _client: CurrentApiClient,
     service: SubscriptionService = Depends(get_subscription_service),
-) -> SubscriptionResponse:
+) -> SubscriptionCreateResponse:
     try:
-        sub = service.create_subscription(data)
+        sub, order = service.create_subscription(data)
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc)) from exc
-    return SubscriptionResponse.model_validate(sub)
+    return SubscriptionCreateResponse(
+        subscription=SubscriptionResponse.model_validate(sub),
+        order=OrderResponse.model_validate(order),
+    )
 
 
 @router.get("/by-user/{external_user_id}", response_model=list[SubscriptionResponse])
