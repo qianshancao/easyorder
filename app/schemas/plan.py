@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel
 
@@ -12,6 +13,21 @@ class PlanCreate(BaseModel):
     trial_duration: int | None = None
     features: dict[str, object] | None = None
     renewal_rules: dict[str, object] | None = None
+
+
+class PlanUpdate(BaseModel):
+    name: str | None = None
+    cycle: str | None = None
+    base_price: int | None = None
+    introductory_price: int | None = None
+    trial_price: int | None = None
+    trial_duration: int | None = None
+    features: dict[str, object] | None = None
+    renewal_rules: dict[str, object] | None = None
+
+
+class PlanStatusToggle(BaseModel):
+    status: Literal["active", "inactive"]
 
 
 class PlanResponse(BaseModel):

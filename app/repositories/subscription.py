@@ -1,6 +1,6 @@
 from datetime import UTC, datetime, timedelta
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.models.subscription import Subscription
@@ -32,6 +32,10 @@ class SubscriptionRepository(BaseRepository[Subscription]):
             .order_by(Subscription.current_period_end)
         )
         return list(self.db.execute(stmt).scalars().all())
+
+    def count_by_plan_id(self, plan_id: int) -> int:
+        stmt = select(func.count()).select_from(Subscription).where(Subscription.plan_id == plan_id)
+        return self.db.execute(stmt).scalar_one()
 
     def get_past_due_subscriptions(self) -> list[Subscription]:
         """获取所有 past_due 状态的订阅。

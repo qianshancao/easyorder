@@ -37,7 +37,8 @@ _oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 
 def get_plan_service(db: Session = Depends(get_db)) -> Generator[PlanService, None, None]:
     repo = PlanRepository(db)
-    yield PlanService(repo=repo)
+    subscription_repo = SubscriptionRepository(db)
+    yield PlanService(repo=repo, subscription_repo=subscription_repo)
 
 
 def get_admin_service(db: Session = Depends(get_db)) -> Generator[AdminService, None, None]:

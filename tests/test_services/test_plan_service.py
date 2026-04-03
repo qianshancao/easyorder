@@ -2,8 +2,10 @@
 
 from unittest.mock import MagicMock
 
+import pytest
+
 from app.models.plan import Plan
-from app.schemas.plan import PlanCreate
+from app.schemas.plan import PlanCreate, PlanUpdate
 from app.services.plan import PlanService
 
 
@@ -93,3 +95,113 @@ class TestPlanServiceListPlans:
         mock_plan_repository.list_all.assert_called_once()
         assert result == expected
         assert len(result) == 2
+
+
+class TestPlanServiceUpdatePlan:
+    """Tests for PlanService.update_plan."""
+
+    def test_update_plan_success(self, mock_plan_repository: MagicMock) -> None:
+        service = PlanService(repo=mock_plan_repository)
+        existing = _build_plan_orm()
+        mock_plan_repository.get_by_id.return_value = existing
+        mock_plan_repository.update.return_value = existing
+
+        result = service.update_plan(1, PlanUpdate(name="Pro Plan", base_price=5000))
+
+        assert result == existing
+        mock_plan_repository.get_by_id.assert_called_once_with(1)
+        mock_plan_repository.update.assert_called_once_with(existing)
+
+    def test_update_plan_not_found(self, mock_plan_repository: MagicMock) -> None:
+        service = PlanService(repo=mock_plan_repository)
+        mock_plan_repository.get_by_id.return_value = None
+
+        result = service.update_plan(999, PlanUpdate(name="New Name"))
+
+        assert result is None
+        mock_plan_repository.update.assert_not_called()
+
+    def test_update_plan_partial_fields(self, mock_plan_repository: MagicMock) -> None:
+        service = PlanService(repo=mock_plan_repository)
+        existing = _build_plan_orm(base_price=3000)
+        mock_plan_repository.get_by_id.return_value = existing
+        mock_plan_repository.update.return_value = existing
+
+        service.update_plan(1, PlanUpdate(base_price=5000))
+
+        assert existing.base_price == 5000
+        # name should NOT be changed since it was not in the update
+        assert existing.name == "Basic Plan"
+
+
+class TestPlanServiceDeletePlan:
+    """Tests for PlanService.delete_plan."""
+
+    def test_delete_plan_success(self, mock_plan_repository: MagicMock) -> None:
+        mock_subscription_repo = MagicMock()
+        mock_subscription_repo.count_by_plan_id.return_value = 0
+        service = PlanService(repo=mock_plan_repository, subscription_repo=mock_subscription_repo)
+
+        existing = _build_plan_orm()
+        mock_plan_repository.get_by_id.return_value = existing
+
+        result = service.delete_plan(1)
+
+        assert result is True
+        mock_plan_repository.delete.assert_called_once_with(existing)
+
+    def test_delete_plan_not_found(self, mock_plan_repository: MagicMock) -> None:
+        mock_subscription_repo = MagicMock()
+        service = PlanService(repo=mock_plan_repository, subscription_repo=mock_subscription_repo)
+        mock_plan_repository.get_by_id.return_value = None
+
+        result = service.delete_plan(999)
+
+        assert result is False
+        mock_plan_repository.delete.assert_not_called()
+
+    def test_delete_plan_with_subscriptions_raises(self, mock_plan_repository: MagicMock) -> None:
+        mock_subscription_repo = MagicMock()
+        mock_subscription_repo.count_by_plan_id.return_value = 3
+        service = PlanService(repo=mock_plan_repository, subscription_repo=mock_subscription_repo)
+
+        mock_plan_repository.get_by_id.return_value = _build_plan_orm()
+
+        with pytest.raises(ValueError, match="无法删除"):
+            service.delete_plan(1)
+        mock_plan_repository.delete.assert_not_called()
+
+
+class TestPlanServiceTogglePlanStatus:
+    """Tests for PlanService.toggle_plan_status."""
+
+    def test_activate_plan(self, mock_plan_repository: MagicMock) -> None:
+        service = PlanService(repo=mock_plan_repository)
+        plan = _build_plan_orm(status="inactive")
+        mock_plan_repository.get_by_id.return_value = plan
+        mock_plan_repository.update.return_value = plan
+
+        result = service.toggle_plan_status(1, "active")
+
+        assert result == plan
+        assert plan.status == "active"
+        mock_plan_repository.update.assert_called_once_with(plan)
+
+    def test_deactivate_plan(self, mock_plan_repository: MagicMock) -> None:
+        service = PlanService(repo=mock_plan_repository)
+        plan = _build_plan_orm(status="active")
+        mock_plan_repository.get_by_id.return_value = plan
+        mock_plan_repository.update.return_value = plan
+
+        result = service.toggle_plan_status(1, "inactive")
+
+        assert result == plan
+        assert plan.status == "inactive"
+
+    def test_toggle_plan_not_found(self, mock_plan_repository: MagicMock) -> None:
+        service = PlanService(repo=mock_plan_repository)
+        mock_plan_repository.get_by_id.return_value = None
+
+        result = service.toggle_plan_status(999, "active")
+
+        assert result is None
