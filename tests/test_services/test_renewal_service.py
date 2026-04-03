@@ -715,3 +715,111 @@ class TestRenewalStatusTransitionValidation:
 
         assert result == 1
         assert sub.status == "expired"
+
+    def test_handle_failure_from_canceled_raises_error(
+        self,
+        mock_subscription_repository,
+    ) -> None:
+        """canceled 状态的订阅调用 handle_renewal_failure 应抛出 ValueError。"""
+        now = datetime.now(tz=UTC)
+        sub = _make_subscription_mock(
+            id=1,
+            external_user_id="user_001",
+            status="canceled",
+            current_period_end=now + timedelta(days=5),
+            plan_snapshot={"cycle": "monthly", "base_price": 3000},
+        )
+        mock_subscription_repository.get_by_id.return_value = sub
+
+        service = RenewalService(
+            mock_subscription_repository,
+            MagicMock(),
+            MagicMock(),
+        )
+
+        with pytest.raises(ValueError, match="Invalid renewal status transition"):
+            service.handle_renewal_failure(subscription_id=1, grace_period_days=7)
+
+    def test_handle_failure_from_expired_raises_error(
+        self,
+        mock_subscription_repository,
+    ) -> None:
+        """expired 状态的订阅调用 handle_renewal_failure 应抛出 ValueError。"""
+        now = datetime.now(tz=UTC)
+        sub = _make_subscription_mock(
+            id=1,
+            external_user_id="user_001",
+            status="expired",
+            current_period_end=now + timedelta(days=5),
+            plan_snapshot={"cycle": "monthly", "base_price": 3000},
+        )
+        mock_subscription_repository.get_by_id.return_value = sub
+
+        service = RenewalService(
+            mock_subscription_repository,
+            MagicMock(),
+            MagicMock(),
+        )
+
+        with pytest.raises(ValueError, match="Invalid renewal status transition"):
+            service.handle_renewal_failure(subscription_id=1, grace_period_days=7)
+
+    def test_handle_success_with_quarterly_cycle_extends_90_days(
+        self,
+        mock_subscription_repository,
+    ) -> None:
+        """季度 cycle 的 handle_renewal_success 应延长 90 天。"""
+        now = datetime.now(tz=UTC)
+        original_end = now + timedelta(days=5)
+        sub = _make_subscription_mock(
+            id=1,
+            external_user_id="user_001",
+            status="past_due",
+            current_period_end=original_end,
+            plan_snapshot={"cycle": "quarterly", "base_price": 8000},
+        )
+        mock_subscription_repository.get_by_id.return_value = sub
+        mock_subscription_repository.update.side_effect = lambda e: e
+
+        service = RenewalService(
+            mock_subscription_repository,
+            MagicMock(),
+            MagicMock(),
+        )
+
+        result = service.handle_renewal_success(subscription_id=1)
+
+        assert result is not None
+        assert result.status == "active"
+        diff = result.current_period_end - original_end
+        assert abs(diff.total_seconds() - timedelta(days=90).total_seconds()) < 5
+
+    def test_handle_success_with_unknown_cycle_defaults_to_30_days(
+        self,
+        mock_subscription_repository,
+    ) -> None:
+        """未知 cycle 的 handle_renewal_success 应回退到 30 天。"""
+        now = datetime.now(tz=UTC)
+        original_end = now + timedelta(days=5)
+        sub = _make_subscription_mock(
+            id=1,
+            external_user_id="user_001",
+            status="past_due",
+            current_period_end=original_end,
+            plan_snapshot={"cycle": "custom", "base_price": 5000},
+        )
+        mock_subscription_repository.get_by_id.return_value = sub
+        mock_subscription_repository.update.side_effect = lambda e: e
+
+        service = RenewalService(
+            mock_subscription_repository,
+            MagicMock(),
+            MagicMock(),
+        )
+
+        result = service.handle_renewal_success(subscription_id=1)
+
+        assert result is not None
+        assert result.status == "active"
+        diff = result.current_period_end - original_end
+        assert abs(diff.total_seconds() - timedelta(days=30).total_seconds()) < 5

@@ -209,6 +209,60 @@ class TestRenewalAdminAPI:
 
         assert response.status_code == 403
 
+    def test_mark_renewal_success_with_past_due_subscription(
+        self, client, db_session, super_admin_token_headers, subscription_repository
+    ) -> None:
+        """past_due 订阅标记续费成功后应回到 active。"""
+        from app.models.plan import Plan
+        from app.repositories.base import BaseRepository
+
+        plan_repo = BaseRepository(Plan, db_session)
+        plan = plan_repo.create(Plan(name="Basic", cycle="monthly", base_price=3000))
+
+        now = datetime.now(tz=UTC)
+        sub = subscription_repository.create(
+            Subscription(
+                external_user_id="user_001",
+                plan_id=plan.id,
+                plan_snapshot={"cycle": "monthly", "base_price": 3000},
+                status="past_due",
+                current_period_start=now - timedelta(days=35),
+                current_period_end=now - timedelta(days=5),
+            )
+        )
+
+        response = client.post(
+            f"/api/v1/renewals/admin/{sub.id}/success",
+            headers=super_admin_token_headers,
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["status"] == "active"
+
+    def test_mark_renewal_success_not_found(
+        self, client, super_admin_token_headers
+    ) -> None:
+        """标记不存在的订阅续费成功应返回 404。"""
+        response = client.post(
+            "/api/v1/renewals/admin/99999/success",
+            headers=super_admin_token_headers,
+        )
+
+        assert response.status_code == 404
+
+    def test_mark_renewal_failure_not_found(
+        self, client, super_admin_token_headers
+    ) -> None:
+        """标记不存在的订阅续费失败应返回 404。"""
+        response = client.post(
+            "/api/v1/renewals/admin/99999/fail",
+            json={"grace_period_days": 7},
+            headers=super_admin_token_headers,
+        )
+
+        assert response.status_code == 404
+
 
 class TestRenewalClientAPI:
     """测试客户端续费 API。"""
@@ -262,5 +316,17 @@ class TestRenewalClientAPI:
     ) -> None:
         """没有 token 不能续费订阅。"""
         response = client.post("/api/v1/renewals/1/renew")
+
+        assert response.status_code == 401
+
+    def test_admin_endpoints_rejected_with_api_token(
+        self, client, api_client_token_headers
+    ) -> None:
+        """API token 不能调用管理员续费端点。"""
+        response = client.post(
+            "/api/v1/renewals/admin/process",
+            json={"grace_period_days": 7},
+            headers=api_client_token_headers,
+        )
 
         assert response.status_code == 401
