@@ -3,6 +3,8 @@
 from datetime import UTC, datetime, timedelta
 from unittest.mock import MagicMock
 
+import pytest
+
 import jwt
 
 from app.config import settings
@@ -187,3 +189,50 @@ class TestAuthServiceAuthenticateOAuthClient:
         service = _make_service(MagicMock(spec=AdminRepository), mock_oauth_repo)
         result = service.authenticate_oauth_client("test_client_id", "test_secret")
         assert result is None
+
+
+class TestAuthServicePasswordEdgeCases:
+    """测试 bcrypt 密码处理的边界情况。"""
+
+    def test_long_password_within_bcrypt_limit(self) -> None:
+        """72 字节以内的长密码应正常认证。"""
+        from app.services.admin import _hash_password
+
+        pw = "A" * 72  # bcrypt 最大长度
+        mock_admin_repo = MagicMock(spec=AdminRepository)
+        admin = _make_admin_mock(password_hash=_hash_password(pw))
+        mock_admin_repo.get_by_username.return_value = admin
+        service = _make_service(mock_admin_repo)
+
+        assert service.authenticate_admin("testadmin", pw) is admin
+
+    def test_password_over_72_bytes_rejected_by_bcrypt(self) -> None:
+        """超过 72 字节的密码不应通过 hash 函数。"""
+        from app.services.admin import _hash_password
+
+        with pytest.raises(ValueError, match="cannot be longer than 72 bytes"):
+            _hash_password("A" * 73)
+
+    def test_null_byte_in_password(self) -> None:
+        """密码中包含 null byte 时认证仍一致。"""
+        from app.services.admin import _hash_password
+
+        pw = "pass\x00word"
+        mock_admin_repo = MagicMock(spec=AdminRepository)
+        admin = _make_admin_mock(password_hash=_hash_password(pw))
+        mock_admin_repo.get_by_username.return_value = admin
+        service = _make_service(mock_admin_repo)
+
+        assert service.authenticate_admin("testadmin", pw) is admin
+
+    def test_unicode_password_encoding_consistency(self) -> None:
+        """Unicode 密码的 UTF-8 编码一致性。"""
+        from app.services.admin import _hash_password
+
+        pw = "密码密码123"
+        mock_admin_repo = MagicMock(spec=AdminRepository)
+        admin = _make_admin_mock(password_hash=_hash_password(pw))
+        mock_admin_repo.get_by_username.return_value = admin
+        service = _make_service(mock_admin_repo)
+
+        assert service.authenticate_admin("testadmin", pw) is admin
