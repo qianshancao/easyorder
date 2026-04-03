@@ -298,3 +298,76 @@ class TestSubscriptionRepositoryGetExpiringSubscriptions:
 
         assert len(result) == 1
         assert result[0].id == active_sub.id
+
+
+class TestSubscriptionRepositoryGetPastDueSubscriptions:
+    """测试获取 past_due 状态的订阅。"""
+
+    def test_returns_only_past_due_subscriptions(self, subscription_repository, db_session) -> None:
+        """仅返回 past_due 状态的订阅。"""
+        plan = _insert_plan(db_session)
+        now = datetime.now(tz=UTC)
+
+        past_due = subscription_repository.create(
+            _build_subscription(plan.id, external_user_id="user_pd", status="past_due",
+                                current_period_end=now + timedelta(days=1))
+        )
+        subscription_repository.create(
+            _build_subscription(plan.id, external_user_id="user_act", status="active",
+                                current_period_end=now + timedelta(days=5))
+        )
+        subscription_repository.create(
+            _build_subscription(plan.id, external_user_id="user_trial", status="trial",
+                                current_period_end=now + timedelta(days=3))
+        )
+
+        result = subscription_repository.get_past_due_subscriptions()
+        assert len(result) == 1
+        assert result[0].id == past_due.id
+
+    def test_returns_empty_when_no_past_due(self, subscription_repository, db_session) -> None:
+        """没有 past_due 订阅时返回空列表。"""
+        plan = _insert_plan(db_session)
+        now = datetime.now(tz=UTC)
+        subscription_repository.create(
+            _build_subscription(plan.id, status="active", current_period_end=now + timedelta(days=5))
+        )
+
+        assert subscription_repository.get_past_due_subscriptions() == []
+
+    def test_orders_by_current_period_end(self, subscription_repository, db_session) -> None:
+        """结果按 current_period_end 升序排列。"""
+        plan = _insert_plan(db_session)
+        now = datetime.now(tz=UTC)
+
+        sub_5d = subscription_repository.create(
+            _build_subscription(plan.id, external_user_id="u1", status="past_due",
+                                current_period_end=now + timedelta(days=5))
+        )
+        sub_1d = subscription_repository.create(
+            _build_subscription(plan.id, external_user_id="u2", status="past_due",
+                                current_period_end=now + timedelta(days=1))
+        )
+        sub_3d = subscription_repository.create(
+            _build_subscription(plan.id, external_user_id="u3", status="past_due",
+                                current_period_end=now + timedelta(days=3))
+        )
+
+        result = subscription_repository.get_past_due_subscriptions()
+        assert len(result) == 3
+        assert result[0].id == sub_1d.id
+        assert result[1].id == sub_3d.id
+        assert result[2].id == sub_5d.id
+
+    def test_excludes_canceled_and_expired(self, subscription_repository, db_session) -> None:
+        """排除 canceled 和 expired 状态。"""
+        plan = _insert_plan(db_session)
+        now = datetime.now(tz=UTC)
+        subscription_repository.create(
+            _build_subscription(plan.id, status="canceled", current_period_end=now + timedelta(days=1))
+        )
+        subscription_repository.create(
+            _build_subscription(plan.id, status="expired", current_period_end=now + timedelta(days=1))
+        )
+
+        assert subscription_repository.get_past_due_subscriptions() == []

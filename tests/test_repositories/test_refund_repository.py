@@ -300,3 +300,38 @@ class TestRefundRepositoryGetTotalRefundedAmount:
         refund_repository.create(_build_refund(order_id=order.id, amount=1000, status="pending"))
         result = refund_repository.get_total_refunded_amount(order.id)
         assert isinstance(result, int)
+
+
+class TestRefundRepositoryGetPendingByOrderIdAndAmount:
+    """测试幂等性查询：按 order_id + amount 查找最新 pending 退款。"""
+
+    def test_returns_matching_pending_refund(self, refund_repository, db_session) -> None:
+        order = _insert_order(db_session)
+        refund = refund_repository.create(_build_refund(order_id=order.id, amount=3000, status="pending"))
+
+        result = refund_repository.get_pending_by_order_id_and_amount(order.id, 3000)
+        assert result is not None
+        assert result.id == refund.id
+
+    def test_returns_none_when_no_pending(self, refund_repository, db_session) -> None:
+        order = _insert_order(db_session)
+        refund_repository.create(_build_refund(order_id=order.id, amount=3000, status="success"))
+
+        result = refund_repository.get_pending_by_order_id_and_amount(order.id, 3000)
+        assert result is None
+
+    def test_returns_latest_when_multiple_pending(self, refund_repository, db_session) -> None:
+        order = _insert_order(db_session)
+        refund_repository.create(_build_refund(order_id=order.id, amount=3000, status="pending"))
+        latest = refund_repository.create(_build_refund(order_id=order.id, amount=3000, status="pending"))
+
+        result = refund_repository.get_pending_by_order_id_and_amount(order.id, 3000)
+        assert result is not None
+        assert result.id == latest.id
+
+    def test_returns_none_when_amount_mismatches(self, refund_repository, db_session) -> None:
+        order = _insert_order(db_session)
+        refund_repository.create(_build_refund(order_id=order.id, amount=5000, status="pending"))
+
+        result = refund_repository.get_pending_by_order_id_and_amount(order.id, 3000)
+        assert result is None
