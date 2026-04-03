@@ -39,15 +39,11 @@ class RefundService(BaseService[Refund]):
 
         # 验证订单已支付
         if order.status != "paid":
-            raise ValueError(
-                f"Order {data.order_id} is not paid (current status: {order.status})"
-            )
+            raise ValueError(f"Order {data.order_id} is not paid (current status: {order.status})")
 
         # 验证退款金额不超过订单金额
         if data.amount > order.amount:
-            raise ValueError(
-                f"Refund amount ({data.amount}) exceeds order amount ({order.amount})"
-            )
+            raise ValueError(f"Refund amount ({data.amount}) exceeds order amount ({order.amount})")
 
         # 校验累计退款金额不超过订单金额
         existing_total = self.repo.get_total_refunded_amount(data.order_id)
@@ -58,9 +54,7 @@ class RefundService(BaseService[Refund]):
             )
 
         # 幂等检查: 同一订单相同金额不重复创建 pending 的退款
-        existing = self.repo.get_pending_by_order_id_and_amount(
-            data.order_id, data.amount
-        )
+        existing = self.repo.get_pending_by_order_id_and_amount(data.order_id, data.amount)
         if existing is not None:
             logger.info(
                 "refund.create_idempotent",

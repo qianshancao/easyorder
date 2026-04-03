@@ -6,7 +6,6 @@ from app.services.base import BaseService
 
 
 class PlanService(BaseService[Plan]):
-
     def __init__(self, repo: PlanRepository, subscription_repo: SubscriptionRepository | None = None) -> None:
         super().__init__(repo, domain_name="plan")
         self.subscription_repo = subscription_repo

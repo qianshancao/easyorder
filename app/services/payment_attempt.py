@@ -5,7 +5,9 @@ from app.models.payment_attempt import PaymentAttempt
 from app.repositories.order import OrderRepository
 from app.repositories.payment_attempt import PaymentAttemptRepository
 from app.schemas.payment_attempt import PaymentAttemptCreate
+from app.schemas.payment_transaction import PaymentTransactionCreate
 from app.services.base import BaseService
+from app.services.payment_transaction import PaymentTransactionService
 
 logger = logging.getLogger(__name__)
 
@@ -23,9 +25,11 @@ class PaymentAttemptService(BaseService[PaymentAttempt]):
         self,
         repo: PaymentAttemptRepository,
         order_repo: OrderRepository,
+        payment_transaction_service: PaymentTransactionService,
     ) -> None:
         super().__init__(repo, domain_name="payment_attempt")
         self.order_repo = order_repo
+        self.payment_transaction_service = payment_transaction_service
 
     def create_attempt(self, data: PaymentAttemptCreate) -> PaymentAttempt:
         # 验证 Order 存在
@@ -96,9 +100,7 @@ class PaymentAttemptService(BaseService[PaymentAttempt]):
         )
         return results
 
-    def mark_as_success(
-        self, attempt_id: int, channel_transaction_id: str
-    ) -> PaymentAttempt | None:
+    def mark_as_success(self, attempt_id: int, channel_transaction_id: str) -> PaymentAttempt | None:
         attempt = self.repo.get_by_id(attempt_id)
         if attempt is None:
             return None
@@ -133,6 +135,17 @@ class PaymentAttemptService(BaseService[PaymentAttempt]):
                     "payment_attempt_id": updated.id,
                 },
             )
+
+        # Auto-create PaymentTransaction (idempotent by channel_transaction_id)
+        self.payment_transaction_service.create_transaction(
+            PaymentTransactionCreate(
+                payment_attempt_id=updated.id,
+                order_id=updated.order_id,
+                channel=updated.channel,
+                amount=updated.amount,
+                channel_transaction_id=channel_transaction_id,
+            )
+        )
 
         return updated
 

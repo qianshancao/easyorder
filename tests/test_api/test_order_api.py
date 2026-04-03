@@ -268,7 +268,9 @@ def _one_time_pay(
 class TestOneTimePurchase:
     """POST /api/v1/orders/one-time-pay 一体化购买端点。"""
 
-    def test_one_time_purchase_returns_order(self, client: TestClient, api_client_token_headers: dict[str, str]) -> None:
+    def test_one_time_purchase_returns_order(
+        self, client: TestClient, api_client_token_headers: dict[str, str]
+    ) -> None:
         resp = client.post(
             "/api/v1/orders/one-time-pay",
             json={
@@ -293,21 +295,15 @@ class TestOneTimePurchase:
         assert data["payment_attempt"]["amount"] == 3000
         assert data["payment_attempt"]["order_id"] == data["order"]["id"]
 
-    def test_order_type_is_one_time(
-        self, client: TestClient, api_client_token_headers: dict[str, str]
-    ) -> None:
+    def test_order_type_is_one_time(self, client: TestClient, api_client_token_headers: dict[str, str]) -> None:
         data = _one_time_pay(client, api_client_token_headers)
         assert data["order"]["type"] == "one_time"
 
-    def test_payment_attempt_status_pending(
-        self, client: TestClient, api_client_token_headers: dict[str, str]
-    ) -> None:
+    def test_payment_attempt_status_pending(self, client: TestClient, api_client_token_headers: dict[str, str]) -> None:
         data = _one_time_pay(client, api_client_token_headers)
         assert data["payment_attempt"]["status"] == "pending"
 
-    def test_subscription_id_is_none(
-        self, client: TestClient, api_client_token_headers: dict[str, str]
-    ) -> None:
+    def test_subscription_id_is_none(self, client: TestClient, api_client_token_headers: dict[str, str]) -> None:
         data = _one_time_pay(client, api_client_token_headers)
         assert data["order"]["subscription_id"] is None
 
@@ -346,9 +342,7 @@ class TestOneTimePurchase:
         )
         assert resp.status_code == 401
 
-    def test_missing_external_user_id(
-        self, client: TestClient, api_client_token_headers: dict[str, str]
-    ) -> None:
+    def test_missing_external_user_id(self, client: TestClient, api_client_token_headers: dict[str, str]) -> None:
         resp = client.post(
             "/api/v1/orders/one-time-pay",
             json={"channel": "alipay", "amount": 3000},
@@ -356,9 +350,7 @@ class TestOneTimePurchase:
         )
         assert resp.status_code == 422
 
-    def test_zero_amount(
-        self, client: TestClient, api_client_token_headers: dict[str, str]
-    ) -> None:
+    def test_zero_amount(self, client: TestClient, api_client_token_headers: dict[str, str]) -> None:
         resp = client.post(
             "/api/v1/orders/one-time-pay",
             json={"external_user_id": "user_001", "channel": "alipay", "amount": 0},
@@ -403,9 +395,7 @@ class TestOneTimePurchaseE2E:
         assert resp.json()["status"] == "paid"
         assert resp.json()["paid_at"] is not None
 
-    def test_pay_then_cancel(
-        self, client: TestClient, api_client_token_headers: dict[str, str]
-    ) -> None:
+    def test_pay_then_cancel(self, client: TestClient, api_client_token_headers: dict[str, str]) -> None:
         """one-time-pay -> 取消订单。"""
         resp = client.post(
             "/api/v1/orders/one-time-pay",
@@ -433,9 +423,7 @@ class TestOneTimePurchaseE2E:
         assert resp.status_code == 200
         assert resp.json()["status"] == "canceled"
 
-    def test_pay_mark_success_then_refund(
-        self, client: TestClient, api_client_token_headers: dict[str, str]
-    ) -> None:
+    def test_pay_mark_success_then_refund(self, client: TestClient, api_client_token_headers: dict[str, str]) -> None:
         """one-time-pay -> 标记支付成功 -> 申请退款。"""
         resp = client.post(
             "/api/v1/orders/one-time-pay",

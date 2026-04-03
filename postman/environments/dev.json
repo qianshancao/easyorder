@@ -4,8 +4,8 @@
   "values": [
     {"key": "base_url", "value": "http://localhost:6000", "type": "default", "enabled": true},
     {"key": "observability_url", "value": "http://localhost", "type": "default", "enabled": true},
-    {"key": "admin_token", "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwicm9sZSI6InN1cGVyX2FkbWluIiwidHlwZSI6ImFkbWluIiwiZXhwIjoxNzc1MDU5NDgyfQ.MokQkjRNXMAhVE4_mgdYPbnGP9gVetpkV0BYwOY7PKE", "type": "any", "enabled": true},
-    {"key": "api_token", "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJzMGhiNGRDc1JteWE0NDRmNy1OS1ZMRFhPWEowNGU1Y2pwT2docXRjUkZNIiwidHlwZSI6ImFwaSIsImV4cCI6MTc3NTA1OTUyMn0.fBSjN1xTaA2r4IVdG8CI6R3MBjlu2oz2aOR4B91IDS8", "type": "any", "enabled": true},
+    {"key": "admin_token", "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwicm9sZSI6InN1cGVyX2FkbWluIiwidHlwZSI6ImFkbWluIiwiZXhwIjoxNzc1MTA5MjE1fQ.w8x5PM_yPnTjdlJBjBGCHqSGpLZ263yQVHBbKvLRlAg", "type": "any", "enabled": true},
+    {"key": "api_token", "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJzMGhiNGRDc1JteWE0NDRmNy1OS1ZMRFhPWEowNGU1Y2pwT2docXRjUkZNIiwidHlwZSI6ImFwaSIsImV4cCI6MTc3NTEwOTIzMX0.LpTCHalK9KJDDawZKkN473rsSztmu9i-bM19_Iklrsc", "type": "any", "enabled": true},
     {"key": "admin_id", "value": "", "type": "any", "enabled": true},
     {"key": "plan_id", "value": "", "type": "any", "enabled": true},
     {"key": "plan_id_2", "value": "", "type": "any", "enabled": true},

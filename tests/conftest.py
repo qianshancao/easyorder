@@ -24,12 +24,14 @@ from app.repositories.admin import AdminRepository
 from app.repositories.oauth_client import OAuthClientRepository
 from app.repositories.order import OrderRepository
 from app.repositories.payment_attempt import PaymentAttemptRepository
+from app.repositories.payment_transaction import PaymentTransactionRepository
 from app.repositories.plan import PlanRepository
 from app.repositories.refund import RefundRepository
 from app.repositories.subscription import SubscriptionRepository
 from app.repositories.system_config import SystemConfigRepository
 from app.services.admin import _hash_password
 from app.services.auth import AuthService
+from app.services.payment_transaction import PaymentTransactionService
 
 
 @pytest.fixture(scope="session")
@@ -124,6 +126,12 @@ def payment_attempt_repository(db_session: Session) -> PaymentAttemptRepository:
 
 
 @pytest.fixture()
+def payment_transaction_repository(db_session: Session) -> PaymentTransactionRepository:
+    """PaymentTransactionRepository backed by the test database."""
+    return PaymentTransactionRepository(db_session)
+
+
+@pytest.fixture()
 def refund_repository(db_session: Session) -> RefundRepository:
     """RefundRepository backed by the test database."""
     return RefundRepository(db_session)
@@ -172,6 +180,18 @@ def mock_order_repository() -> MagicMock:
 def mock_payment_attempt_repository() -> MagicMock:
     """Mocked PaymentAttemptRepository for service layer tests."""
     return MagicMock(spec=PaymentAttemptRepository)
+
+
+@pytest.fixture()
+def mock_payment_transaction_repository() -> MagicMock:
+    """Mocked PaymentTransactionRepository for service layer tests."""
+    return MagicMock(spec=PaymentTransactionRepository)
+
+
+@pytest.fixture()
+def mock_payment_transaction_service() -> MagicMock:
+    """Mocked PaymentTransactionService for PaymentAttemptService tests."""
+    return MagicMock(spec=PaymentTransactionService)
 
 
 @pytest.fixture()

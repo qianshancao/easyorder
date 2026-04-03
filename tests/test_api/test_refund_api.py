@@ -86,7 +86,9 @@ class TestCreateRefund:
         )
         assert resp.status_code == 422
 
-    def test_create_cumulative_refund_exceeds_order(self, client: TestClient, api_client_token_headers: dict[str, str]) -> None:
+    def test_create_cumulative_refund_exceeds_order(
+        self, client: TestClient, api_client_token_headers: dict[str, str]
+    ) -> None:
         # Order amount is 5000, create first refund of 3000
         order = _create_paid_order(client, api_client_token_headers)
         _create_refund(client, api_client_token_headers, order["id"], amount=3000)
@@ -100,7 +102,9 @@ class TestCreateRefund:
         assert resp.status_code == 422
         assert "plus existing refunds" in resp.json()["detail"]
 
-    def test_create_cumulative_refund_exact_order_amount_allowed(self, client: TestClient, api_client_token_headers: dict[str, str]) -> None:
+    def test_create_cumulative_refund_exact_order_amount_allowed(
+        self, client: TestClient, api_client_token_headers: dict[str, str]
+    ) -> None:
         # Order amount is 5000, create first refund of 2000
         order = _create_paid_order(client, api_client_token_headers)
         _create_refund(client, api_client_token_headers, order["id"], amount=2000)

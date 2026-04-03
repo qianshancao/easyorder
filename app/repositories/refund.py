@@ -10,16 +10,10 @@ class RefundRepository(BaseRepository[Refund]):
         super().__init__(Refund, db)
 
     def get_by_order_id(self, order_id: int) -> list[Refund]:
-        stmt = (
-            select(Refund)
-            .where(Refund.order_id == order_id)
-            .order_by(Refund.id)
-        )
+        stmt = select(Refund).where(Refund.order_id == order_id).order_by(Refund.id)
         return list(self.db.execute(stmt).scalars().all())
 
-    def get_pending_by_order_id_and_amount(
-        self, order_id: int, amount: int
-    ) -> Refund | None:
+    def get_pending_by_order_id_and_amount(self, order_id: int, amount: int) -> Refund | None:
         """Get pending refund by order ID and amount for idempotency check."""
         stmt = (
             select(Refund)

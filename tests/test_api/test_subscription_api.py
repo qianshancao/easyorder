@@ -1,6 +1,5 @@
 """Tests for Subscription API endpoints using TestClient with a test database."""
 
-
 from fastapi.testclient import TestClient
 
 from .conftest import _create_plan
@@ -296,9 +295,7 @@ class TestUpgradeSubscription:
         assert data["order"]["type"] == "upgrade"
         assert data["proration_amount"] > 0
 
-    def test_upgrade_subscription_not_found(
-        self, client: TestClient, api_client_token_headers: dict[str, str]
-    ) -> None:
+    def test_upgrade_subscription_not_found(self, client: TestClient, api_client_token_headers: dict[str, str]) -> None:
         """升级不存在的订阅。"""
         resp = client.post(
             "/api/v1/subscriptions/99999/upgrade",
@@ -332,9 +329,7 @@ class TestUpgradeSubscription:
 
         assert resp.status_code == 422
 
-    def test_upgrade_requires_auth(
-        self, client: TestClient, super_admin_token_headers: dict[str, str]
-    ) -> None:
+    def test_upgrade_requires_auth(self, client: TestClient, super_admin_token_headers: dict[str, str]) -> None:
         """升级需要认证。"""
         plan = _create_plan(client, super_admin_token_headers)
         resp = client.post(
@@ -417,9 +412,7 @@ class TestDowngradeSubscription:
 
         assert resp.status_code == 422
 
-    def test_downgrade_requires_auth(
-        self, client: TestClient, super_admin_token_headers: dict[str, str]
-    ) -> None:
+    def test_downgrade_requires_auth(self, client: TestClient, super_admin_token_headers: dict[str, str]) -> None:
         """降级需要认证。"""
         plan = _create_plan(client, super_admin_token_headers)
         resp = client.post(

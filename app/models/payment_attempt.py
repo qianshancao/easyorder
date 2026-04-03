@@ -11,6 +11,4 @@ class PaymentAttempt(Base, TimestampMixin):
     channel: Mapped[str] = mapped_column(String(20), index=True)
     amount: Mapped[int] = mapped_column(Integer)
     status: Mapped[str] = mapped_column(String(20), default="pending", index=True)
-    channel_transaction_id: Mapped[str | None] = mapped_column(
-        String(255), nullable=True, default=None
-    )
+    channel_transaction_id: Mapped[str | None] = mapped_column(String(255), nullable=True, default=None)

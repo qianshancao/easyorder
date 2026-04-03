@@ -10,11 +10,7 @@ class PaymentAttemptRepository(BaseRepository[PaymentAttempt]):
         super().__init__(PaymentAttempt, db)
 
     def get_by_order_id(self, order_id: int) -> list[PaymentAttempt]:
-        stmt = (
-            select(PaymentAttempt)
-            .where(PaymentAttempt.order_id == order_id)
-            .order_by(PaymentAttempt.id)
-        )
+        stmt = select(PaymentAttempt).where(PaymentAttempt.order_id == order_id).order_by(PaymentAttempt.id)
         return list(self.db.execute(stmt).scalars().all())
 
     def get_pending_by_order_id(self, order_id: int) -> PaymentAttempt | None:

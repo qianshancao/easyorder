@@ -37,8 +37,8 @@ CYCLE_DURATION_DAYS: dict[str, int] = {
 class RenewalService:
     """自动续费服务。
 
-   编排服务，协调 SubscriptionRepository、OrderRepository 和
-    PaymentAttemptRepository 完成续费流程。
+    编排服务，协调 SubscriptionRepository、OrderRepository 和
+     PaymentAttemptRepository 完成续费流程。
     """
 
     def __init__(

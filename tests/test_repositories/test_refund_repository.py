@@ -195,9 +195,8 @@ class TestRefundRepositoryUpdate:
         updated = refund_repository.update(refund)
         assert updated.completed_at is not None
         # SQLite loses timezone info, compare datetime only
-        assert (
-            updated.completed_at.replace(microsecond=0, tzinfo=None)
-            == completed_time.replace(microsecond=0, tzinfo=None)
+        assert updated.completed_at.replace(microsecond=0, tzinfo=None) == completed_time.replace(
+            microsecond=0, tzinfo=None
         )
 
     def test_update_multiple_fields(self, refund_repository, db_session) -> None:

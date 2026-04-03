@@ -46,9 +46,7 @@ class TestRenewalAdminAPI:
         assert data["attempts"][0]["subscription_id"] == sub.id
         assert data["attempts"][0]["success"] is True
 
-    def test_process_renewals_forbidden_as_regular_admin(
-        self, client, admin_token_headers
-    ) -> None:
+    def test_process_renewals_forbidden_as_regular_admin(self, client, admin_token_headers) -> None:
         """普通管理员不能批量处理续费。"""
         response = client.post(
             "/api/v1/renewals/admin/process",
@@ -58,9 +56,7 @@ class TestRenewalAdminAPI:
 
         assert response.status_code == 403
 
-    def test_process_renewals_unauthorized_without_token(
-        self, client
-    ) -> None:
+    def test_process_renewals_unauthorized_without_token(self, client) -> None:
         """没有 token 不能批量处理续费。"""
         response = client.post(
             "/api/v1/renewals/admin/process",
@@ -110,9 +106,7 @@ class TestRenewalAdminAPI:
         )
         assert abs(diff.total_seconds() - timedelta(days=30).total_seconds()) < 5
 
-    def test_mark_renewal_success_forbidden_as_regular_admin(
-        self, client, admin_token_headers
-    ) -> None:
+    def test_mark_renewal_success_forbidden_as_regular_admin(self, client, admin_token_headers) -> None:
         """普通管理员不能标记续费成功。"""
         response = client.post(
             "/api/v1/renewals/admin/1/success",
@@ -153,9 +147,7 @@ class TestRenewalAdminAPI:
         data = response.json()
         assert data["status"] == "past_due"
 
-    def test_mark_renewal_failure_forbidden_as_regular_admin(
-        self, client, admin_token_headers
-    ) -> None:
+    def test_mark_renewal_failure_forbidden_as_regular_admin(self, client, admin_token_headers) -> None:
         """普通管理员不能标记续费失败。"""
         response = client.post(
             "/api/v1/renewals/admin/1/fail",
@@ -197,9 +189,7 @@ class TestRenewalAdminAPI:
         data = response.json()
         assert data["expired_count"] == 1
 
-    def test_process_expired_forbidden_as_regular_admin(
-        self, client, admin_token_headers
-    ) -> None:
+    def test_process_expired_forbidden_as_regular_admin(self, client, admin_token_headers) -> None:
         """普通管理员不能处理过期订阅。"""
         response = client.post(
             "/api/v1/renewals/admin/process-expired",
@@ -240,9 +230,7 @@ class TestRenewalAdminAPI:
         data = response.json()
         assert data["status"] == "active"
 
-    def test_mark_renewal_success_not_found(
-        self, client, super_admin_token_headers
-    ) -> None:
+    def test_mark_renewal_success_not_found(self, client, super_admin_token_headers) -> None:
         """标记不存在的订阅续费成功应返回 404。"""
         response = client.post(
             "/api/v1/renewals/admin/99999/success",
@@ -251,9 +239,7 @@ class TestRenewalAdminAPI:
 
         assert response.status_code == 404
 
-    def test_mark_renewal_failure_not_found(
-        self, client, super_admin_token_headers
-    ) -> None:
+    def test_mark_renewal_failure_not_found(self, client, super_admin_token_headers) -> None:
         """标记不存在的订阅续费失败应返回 404。"""
         response = client.post(
             "/api/v1/renewals/admin/99999/fail",
@@ -300,9 +286,7 @@ class TestRenewalClientAPI:
         assert data["success"] is True
         assert data["order_id"] is not None
 
-    def test_renew_subscription_not_found(
-        self, client, api_client_token_headers
-    ) -> None:
+    def test_renew_subscription_not_found(self, client, api_client_token_headers) -> None:
         """续费不存在的订阅返回错误。"""
         response = client.post(
             "/api/v1/renewals/999/renew",
@@ -311,17 +295,13 @@ class TestRenewalClientAPI:
 
         assert response.status_code == 404
 
-    def test_renew_subscription_unauthorized_without_token(
-        self, client
-    ) -> None:
+    def test_renew_subscription_unauthorized_without_token(self, client) -> None:
         """没有 token 不能续费订阅。"""
         response = client.post("/api/v1/renewals/1/renew")
 
         assert response.status_code == 401
 
-    def test_admin_endpoints_rejected_with_api_token(
-        self, client, api_client_token_headers
-    ) -> None:
+    def test_admin_endpoints_rejected_with_api_token(self, client, api_client_token_headers) -> None:
         """API token 不能调用管理员续费端点。"""
         response = client.post(
             "/api/v1/renewals/admin/process",

@@ -18,13 +18,9 @@ def _call_or_raise(service_fn: Callable[..., PaymentAttempt | None], *args: obje
     try:
         result = service_fn(*args)
     except ValueError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc)
-        ) from exc
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc)) from exc
     if result is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="支付尝试不存在"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="支付尝试不存在")
     return PaymentAttemptResponse.model_validate(result)
 
 
@@ -57,9 +53,7 @@ def admin_get_attempt(
 ) -> PaymentAttemptResponse:
     attempt = service.get_attempt(attempt_id)
     if attempt is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="支付尝试不存在"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="支付尝试不存在")
     return PaymentAttemptResponse.model_validate(attempt)
 
 
@@ -75,9 +69,7 @@ def create_attempt(
     try:
         attempt = service.create_attempt(data)
     except ValueError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc)
-        ) from exc
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc)) from exc
     return PaymentAttemptResponse.model_validate(attempt)
 
 
@@ -87,10 +79,7 @@ def list_by_order(
     _client: CurrentApiClient,
     service: PaymentAttemptService = Depends(get_payment_attempt_service),
 ) -> list[PaymentAttemptResponse]:
-    return [
-        PaymentAttemptResponse.model_validate(a)
-        for a in service.list_by_order(order_id)
-    ]
+    return [PaymentAttemptResponse.model_validate(a) for a in service.list_by_order(order_id)]
 
 
 @router.get("/{attempt_id}", response_model=PaymentAttemptResponse)
@@ -101,9 +90,7 @@ def get_attempt(
 ) -> PaymentAttemptResponse:
     attempt = service.get_attempt(attempt_id)
     if attempt is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="支付尝试不存在"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="支付尝试不存在")
     return PaymentAttemptResponse.model_validate(attempt)
 
 

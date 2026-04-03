@@ -12,6 +12,7 @@ from app.repositories.admin import AdminRepository
 from app.repositories.oauth_client import OAuthClientRepository
 from app.repositories.order import OrderRepository
 from app.repositories.payment_attempt import PaymentAttemptRepository
+from app.repositories.payment_transaction import PaymentTransactionRepository
 from app.repositories.plan import PlanRepository
 from app.repositories.refund import RefundRepository
 from app.repositories.subscription import SubscriptionRepository
@@ -22,6 +23,7 @@ from app.services.auth import AuthService
 from app.services.oauth_client import OAuthClientService
 from app.services.order import OrderService
 from app.services.payment_attempt import PaymentAttemptService
+from app.services.payment_transaction import PaymentTransactionService
 from app.services.plan import PlanService
 from app.services.proration import ProrationService
 from app.services.refund import RefundService
@@ -74,11 +76,20 @@ def get_order_service(db: Session = Depends(get_db)) -> Generator[OrderService, 
 
 
 def get_payment_attempt_service(db: Session = Depends(get_db)) -> Generator[PaymentAttemptService, None, None]:
-    yield PaymentAttemptService(PaymentAttemptRepository(db), OrderRepository(db))
+    txn_service = PaymentTransactionService(PaymentTransactionRepository(db))
+    yield PaymentAttemptService(
+        PaymentAttemptRepository(db),
+        OrderRepository(db),
+        txn_service,
+    )
 
 
 def get_refund_service(db: Session = Depends(get_db)) -> Generator[RefundService, None, None]:
     yield RefundService(RefundRepository(db), OrderRepository(db))
+
+
+def get_payment_transaction_service(db: Session = Depends(get_db)) -> Generator[PaymentTransactionService, None, None]:
+    yield PaymentTransactionService(PaymentTransactionRepository(db))
 
 
 def get_renewal_service(db: Session = Depends(get_db)) -> Generator[RenewalService, None, None]:

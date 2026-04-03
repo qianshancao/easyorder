@@ -309,16 +309,19 @@ class TestSubscriptionRepositoryGetPastDueSubscriptions:
         now = datetime.now(tz=UTC)
 
         past_due = subscription_repository.create(
-            _build_subscription(plan.id, external_user_id="user_pd", status="past_due",
-                                current_period_end=now + timedelta(days=1))
+            _build_subscription(
+                plan.id, external_user_id="user_pd", status="past_due", current_period_end=now + timedelta(days=1)
+            )
         )
         subscription_repository.create(
-            _build_subscription(plan.id, external_user_id="user_act", status="active",
-                                current_period_end=now + timedelta(days=5))
+            _build_subscription(
+                plan.id, external_user_id="user_act", status="active", current_period_end=now + timedelta(days=5)
+            )
         )
         subscription_repository.create(
-            _build_subscription(plan.id, external_user_id="user_trial", status="trial",
-                                current_period_end=now + timedelta(days=3))
+            _build_subscription(
+                plan.id, external_user_id="user_trial", status="trial", current_period_end=now + timedelta(days=3)
+            )
         )
 
         result = subscription_repository.get_past_due_subscriptions()
@@ -341,16 +344,19 @@ class TestSubscriptionRepositoryGetPastDueSubscriptions:
         now = datetime.now(tz=UTC)
 
         sub_5d = subscription_repository.create(
-            _build_subscription(plan.id, external_user_id="u1", status="past_due",
-                                current_period_end=now + timedelta(days=5))
+            _build_subscription(
+                plan.id, external_user_id="u1", status="past_due", current_period_end=now + timedelta(days=5)
+            )
         )
         sub_1d = subscription_repository.create(
-            _build_subscription(plan.id, external_user_id="u2", status="past_due",
-                                current_period_end=now + timedelta(days=1))
+            _build_subscription(
+                plan.id, external_user_id="u2", status="past_due", current_period_end=now + timedelta(days=1)
+            )
         )
         sub_3d = subscription_repository.create(
-            _build_subscription(plan.id, external_user_id="u3", status="past_due",
-                                current_period_end=now + timedelta(days=3))
+            _build_subscription(
+                plan.id, external_user_id="u3", status="past_due", current_period_end=now + timedelta(days=3)
+            )
         )
 
         result = subscription_repository.get_past_due_subscriptions()

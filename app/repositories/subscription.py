@@ -43,9 +43,5 @@ class SubscriptionRepository(BaseRepository[Subscription]):
         Returns:
             past_due 状态的订阅列表
         """
-        stmt = (
-            select(Subscription)
-            .where(Subscription.status == "past_due")
-            .order_by(Subscription.current_period_end)
-        )
+        stmt = select(Subscription).where(Subscription.status == "past_due").order_by(Subscription.current_period_end)
         return list(self.db.execute(stmt).scalars().all())

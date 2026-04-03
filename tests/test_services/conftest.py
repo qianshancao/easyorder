@@ -9,6 +9,7 @@ from app.models.admin import Admin
 from app.models.oauth_client import OAuthClient
 from app.models.order import Order
 from app.models.payment_attempt import PaymentAttempt
+from app.models.payment_transaction import PaymentTransaction
 from app.models.plan import Plan
 from app.models.refund import Refund
 from app.models.subscription import Subscription
@@ -150,6 +151,26 @@ def _make_attempt_mock(**overrides) -> MagicMock:
     }
     defaults.update(overrides)
     mock = MagicMock(spec=PaymentAttempt)
+    for k, v in defaults.items():
+        setattr(mock, k, v)
+    return mock
+
+
+def _make_payment_transaction_mock(**overrides) -> MagicMock:
+    defaults = {
+        "id": 1,
+        "payment_attempt_id": 1,
+        "order_id": 1,
+        "channel": "alipay",
+        "amount": 3000,
+        "currency": "CNY",
+        "channel_transaction_id": "txn_001",
+        "raw_callback_data": None,
+        "status": "confirmed",
+        "created_at": datetime.now(tz=UTC),
+    }
+    defaults.update(overrides)
+    mock = MagicMock(spec=PaymentTransaction)
     for k, v in defaults.items():
         setattr(mock, k, v)
     return mock

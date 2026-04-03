@@ -9,13 +9,17 @@ from .conftest import _make_attempt_mock, _make_order_mock
 
 
 class TestCreateAttempt:
-    def test_create_success(self, mock_payment_attempt_repository, mock_order_repository) -> None:
+    def test_create_success(
+        self, mock_payment_attempt_repository, mock_order_repository, mock_payment_transaction_service
+    ) -> None:
         order = _make_order_mock()
         mock_order_repository.get_by_id.return_value = order
         mock_payment_attempt_repository.get_pending_by_order_id.return_value = None
         mock_payment_attempt_repository.create.side_effect = lambda e: e
 
-        service = PaymentAttemptService(mock_payment_attempt_repository, mock_order_repository)
+        service = PaymentAttemptService(
+            mock_payment_attempt_repository, mock_order_repository, mock_payment_transaction_service
+        )
 
         result = service.create_attempt(PaymentAttemptCreate(order_id=1, channel="alipay", amount=3000))
 
@@ -24,36 +28,46 @@ class TestCreateAttempt:
         assert result.amount == 3000
         assert result.status == "pending"
 
-    def test_create_order_not_found(self, mock_payment_attempt_repository, mock_order_repository) -> None:
+    def test_create_order_not_found(
+        self, mock_payment_attempt_repository, mock_order_repository, mock_payment_transaction_service
+    ) -> None:
         mock_order_repository.get_by_id.return_value = None
-        service = PaymentAttemptService(mock_payment_attempt_repository, mock_order_repository)
+        service = PaymentAttemptService(
+            mock_payment_attempt_repository, mock_order_repository, mock_payment_transaction_service
+        )
 
         with pytest.raises(ValueError, match="Order 1 not found"):
             service.create_attempt(PaymentAttemptCreate(order_id=1, channel="alipay", amount=3000))
 
     def test_create_idempotent_returns_existing_pending(
-        self, mock_payment_attempt_repository, mock_order_repository
+        self, mock_payment_attempt_repository, mock_order_repository, mock_payment_transaction_service
     ) -> None:
         order = _make_order_mock()
         existing = _make_attempt_mock()
         mock_order_repository.get_by_id.return_value = order
         mock_payment_attempt_repository.get_pending_by_order_id.return_value = existing
 
-        service = PaymentAttemptService(mock_payment_attempt_repository, mock_order_repository)
+        service = PaymentAttemptService(
+            mock_payment_attempt_repository, mock_order_repository, mock_payment_transaction_service
+        )
 
         result = service.create_attempt(PaymentAttemptCreate(order_id=1, channel="alipay", amount=3000))
 
         assert result.id == existing.id
         mock_payment_attempt_repository.create.assert_not_called()
 
-    def test_create_allows_new_after_failed(self, mock_payment_attempt_repository, mock_order_repository) -> None:
+    def test_create_allows_new_after_failed(
+        self, mock_payment_attempt_repository, mock_order_repository, mock_payment_transaction_service
+    ) -> None:
         order = _make_order_mock()
         new_attempt = _make_attempt_mock(id=2)
         mock_order_repository.get_by_id.return_value = order
         mock_payment_attempt_repository.get_pending_by_order_id.return_value = None
         mock_payment_attempt_repository.create.side_effect = lambda e: new_attempt
 
-        service = PaymentAttemptService(mock_payment_attempt_repository, mock_order_repository)
+        service = PaymentAttemptService(
+            mock_payment_attempt_repository, mock_order_repository, mock_payment_transaction_service
+        )
 
         result = service.create_attempt(PaymentAttemptCreate(order_id=1, channel="alipay", amount=3000))
 
@@ -61,42 +75,62 @@ class TestCreateAttempt:
 
 
 class TestGetAttempt:
-    def test_found(self, mock_payment_attempt_repository, mock_order_repository) -> None:
+    def test_found(
+        self, mock_payment_attempt_repository, mock_order_repository, mock_payment_transaction_service
+    ) -> None:
         attempt = _make_attempt_mock()
         mock_payment_attempt_repository.get_by_id.return_value = attempt
-        service = PaymentAttemptService(mock_payment_attempt_repository, mock_order_repository)
+        service = PaymentAttemptService(
+            mock_payment_attempt_repository, mock_order_repository, mock_payment_transaction_service
+        )
 
         assert service.get_attempt(1) is attempt
 
-    def test_not_found(self, mock_payment_attempt_repository, mock_order_repository) -> None:
+    def test_not_found(
+        self, mock_payment_attempt_repository, mock_order_repository, mock_payment_transaction_service
+    ) -> None:
         mock_payment_attempt_repository.get_by_id.return_value = None
-        service = PaymentAttemptService(mock_payment_attempt_repository, mock_order_repository)
+        service = PaymentAttemptService(
+            mock_payment_attempt_repository, mock_order_repository, mock_payment_transaction_service
+        )
 
         assert service.get_attempt(999) is None
 
 
 class TestListByOrder:
-    def test_returns_results(self, mock_payment_attempt_repository, mock_order_repository) -> None:
+    def test_returns_results(
+        self, mock_payment_attempt_repository, mock_order_repository, mock_payment_transaction_service
+    ) -> None:
         attempts = [_make_attempt_mock(), _make_attempt_mock(id=2)]
         mock_payment_attempt_repository.get_by_order_id.return_value = attempts
-        service = PaymentAttemptService(mock_payment_attempt_repository, mock_order_repository)
+        service = PaymentAttemptService(
+            mock_payment_attempt_repository, mock_order_repository, mock_payment_transaction_service
+        )
 
         result = service.list_by_order(1)
         assert len(result) == 2
 
-    def test_empty(self, mock_payment_attempt_repository, mock_order_repository) -> None:
+    def test_empty(
+        self, mock_payment_attempt_repository, mock_order_repository, mock_payment_transaction_service
+    ) -> None:
         mock_payment_attempt_repository.get_by_order_id.return_value = []
-        service = PaymentAttemptService(mock_payment_attempt_repository, mock_order_repository)
+        service = PaymentAttemptService(
+            mock_payment_attempt_repository, mock_order_repository, mock_payment_transaction_service
+        )
 
         assert service.list_by_order(999) == []
 
 
 class TestMarkAsSuccess:
-    def test_success_from_pending(self, mock_payment_attempt_repository, mock_order_repository) -> None:
+    def test_success_from_pending(
+        self, mock_payment_attempt_repository, mock_order_repository, mock_payment_transaction_service
+    ) -> None:
         attempt = _make_attempt_mock(status="pending")
         mock_payment_attempt_repository.get_by_id.return_value = attempt
         mock_payment_attempt_repository.update.side_effect = lambda e: e
-        service = PaymentAttemptService(mock_payment_attempt_repository, mock_order_repository)
+        service = PaymentAttemptService(
+            mock_payment_attempt_repository, mock_order_repository, mock_payment_transaction_service
+        )
 
         result = service.mark_as_success(1, "txn_123")
 
@@ -104,10 +138,14 @@ class TestMarkAsSuccess:
         assert result.channel_transaction_id == "txn_123"
         mock_payment_attempt_repository.update.assert_called_once()
 
-    def test_idempotent_already_success(self, mock_payment_attempt_repository, mock_order_repository) -> None:
+    def test_idempotent_already_success(
+        self, mock_payment_attempt_repository, mock_order_repository, mock_payment_transaction_service
+    ) -> None:
         attempt = _make_attempt_mock(status="success", channel_transaction_id="txn_123")
         mock_payment_attempt_repository.get_by_id.return_value = attempt
-        service = PaymentAttemptService(mock_payment_attempt_repository, mock_order_repository)
+        service = PaymentAttemptService(
+            mock_payment_attempt_repository, mock_order_repository, mock_payment_transaction_service
+        )
 
         result = service.mark_as_success(1, "txn_456")
 
@@ -115,53 +153,77 @@ class TestMarkAsSuccess:
         assert result.channel_transaction_id == "txn_123"
         mock_payment_attempt_repository.update.assert_not_called()
 
-    def test_invalid_from_failed(self, mock_payment_attempt_repository, mock_order_repository) -> None:
+    def test_invalid_from_failed(
+        self, mock_payment_attempt_repository, mock_order_repository, mock_payment_transaction_service
+    ) -> None:
         attempt = _make_attempt_mock(status="failed")
         mock_payment_attempt_repository.get_by_id.return_value = attempt
-        service = PaymentAttemptService(mock_payment_attempt_repository, mock_order_repository)
+        service = PaymentAttemptService(
+            mock_payment_attempt_repository, mock_order_repository, mock_payment_transaction_service
+        )
 
         with pytest.raises(ValueError, match="Invalid status transition"):
             service.mark_as_success(1, "txn_123")
 
-    def test_not_found(self, mock_payment_attempt_repository, mock_order_repository) -> None:
+    def test_not_found(
+        self, mock_payment_attempt_repository, mock_order_repository, mock_payment_transaction_service
+    ) -> None:
         mock_payment_attempt_repository.get_by_id.return_value = None
-        service = PaymentAttemptService(mock_payment_attempt_repository, mock_order_repository)
+        service = PaymentAttemptService(
+            mock_payment_attempt_repository, mock_order_repository, mock_payment_transaction_service
+        )
 
         assert service.mark_as_success(999, "txn_123") is None
 
 
 class TestMarkAsFailed:
-    def test_success_from_pending(self, mock_payment_attempt_repository, mock_order_repository) -> None:
+    def test_success_from_pending(
+        self, mock_payment_attempt_repository, mock_order_repository, mock_payment_transaction_service
+    ) -> None:
         attempt = _make_attempt_mock(status="pending")
         mock_payment_attempt_repository.get_by_id.return_value = attempt
         mock_payment_attempt_repository.update.side_effect = lambda e: e
-        service = PaymentAttemptService(mock_payment_attempt_repository, mock_order_repository)
+        service = PaymentAttemptService(
+            mock_payment_attempt_repository, mock_order_repository, mock_payment_transaction_service
+        )
 
         result = service.mark_as_failed(1)
 
         assert result.status == "failed"
 
-    def test_idempotent_already_failed(self, mock_payment_attempt_repository, mock_order_repository) -> None:
+    def test_idempotent_already_failed(
+        self, mock_payment_attempt_repository, mock_order_repository, mock_payment_transaction_service
+    ) -> None:
         attempt = _make_attempt_mock(status="failed")
         mock_payment_attempt_repository.get_by_id.return_value = attempt
-        service = PaymentAttemptService(mock_payment_attempt_repository, mock_order_repository)
+        service = PaymentAttemptService(
+            mock_payment_attempt_repository, mock_order_repository, mock_payment_transaction_service
+        )
 
         result = service.mark_as_failed(1)
 
         assert result.status == "failed"
         mock_payment_attempt_repository.update.assert_not_called()
 
-    def test_invalid_from_success(self, mock_payment_attempt_repository, mock_order_repository) -> None:
+    def test_invalid_from_success(
+        self, mock_payment_attempt_repository, mock_order_repository, mock_payment_transaction_service
+    ) -> None:
         attempt = _make_attempt_mock(status="success")
         mock_payment_attempt_repository.get_by_id.return_value = attempt
-        service = PaymentAttemptService(mock_payment_attempt_repository, mock_order_repository)
+        service = PaymentAttemptService(
+            mock_payment_attempt_repository, mock_order_repository, mock_payment_transaction_service
+        )
 
         with pytest.raises(ValueError, match="Invalid status transition"):
             service.mark_as_failed(1)
 
-    def test_not_found(self, mock_payment_attempt_repository, mock_order_repository) -> None:
+    def test_not_found(
+        self, mock_payment_attempt_repository, mock_order_repository, mock_payment_transaction_service
+    ) -> None:
         mock_payment_attempt_repository.get_by_id.return_value = None
-        service = PaymentAttemptService(mock_payment_attempt_repository, mock_order_repository)
+        service = PaymentAttemptService(
+            mock_payment_attempt_repository, mock_order_repository, mock_payment_transaction_service
+        )
 
         assert service.mark_as_failed(999) is None
 
@@ -169,7 +231,9 @@ class TestMarkAsFailed:
 class TestMarkSuccessAutoPayOrder:
     """mark_success 应自动将关联 Order 状态更新为 paid。"""
 
-    def test_auto_pays_order(self, mock_payment_attempt_repository, mock_order_repository) -> None:
+    def test_auto_pays_order(
+        self, mock_payment_attempt_repository, mock_order_repository, mock_payment_transaction_service
+    ) -> None:
         attempt = _make_attempt_mock(status="pending", order_id=1)
         order = _make_order_mock(id=1, status="pending")
         mock_payment_attempt_repository.get_by_id.return_value = attempt
@@ -177,7 +241,9 @@ class TestMarkSuccessAutoPayOrder:
         mock_order_repository.get_by_id.return_value = order
         mock_order_repository.update.side_effect = lambda e: e
 
-        service = PaymentAttemptService(mock_payment_attempt_repository, mock_order_repository)
+        service = PaymentAttemptService(
+            mock_payment_attempt_repository, mock_order_repository, mock_payment_transaction_service
+        )
         result = service.mark_as_success(1, "txn_auto_pay")
 
         assert result.status == "success"
@@ -189,7 +255,7 @@ class TestMarkSuccessAutoPayOrder:
         assert updated_order.paid_at is not None
 
     def test_order_already_paid_idempotent(
-        self, mock_payment_attempt_repository, mock_order_repository
+        self, mock_payment_attempt_repository, mock_order_repository, mock_payment_transaction_service
     ) -> None:
         attempt = _make_attempt_mock(status="pending", order_id=1)
         order = _make_order_mock(id=1, status="paid")
@@ -198,7 +264,9 @@ class TestMarkSuccessAutoPayOrder:
         mock_order_repository.get_by_id.return_value = order
         mock_order_repository.update.side_effect = lambda e: e
 
-        service = PaymentAttemptService(mock_payment_attempt_repository, mock_order_repository)
+        service = PaymentAttemptService(
+            mock_payment_attempt_repository, mock_order_repository, mock_payment_transaction_service
+        )
         result = service.mark_as_success(1, "txn_idem")
 
         assert result.status == "success"
@@ -206,14 +274,16 @@ class TestMarkSuccessAutoPayOrder:
         mock_order_repository.update.assert_not_called()
 
     def test_order_not_found_still_marks_success(
-        self, mock_payment_attempt_repository, mock_order_repository
+        self, mock_payment_attempt_repository, mock_order_repository, mock_payment_transaction_service
     ) -> None:
         attempt = _make_attempt_mock(status="pending", order_id=1)
         mock_payment_attempt_repository.get_by_id.return_value = attempt
         mock_payment_attempt_repository.update.side_effect = lambda e: e
         mock_order_repository.get_by_id.return_value = None
 
-        service = PaymentAttemptService(mock_payment_attempt_repository, mock_order_repository)
+        service = PaymentAttemptService(
+            mock_payment_attempt_repository, mock_order_repository, mock_payment_transaction_service
+        )
         result = service.mark_as_success(1, "txn_no_order")
 
         assert result.status == "success"
@@ -222,7 +292,7 @@ class TestMarkSuccessAutoPayOrder:
         mock_order_repository.update.assert_not_called()
 
     def test_order_repo_call_args(
-        self, mock_payment_attempt_repository, mock_order_repository
+        self, mock_payment_attempt_repository, mock_order_repository, mock_payment_transaction_service
     ) -> None:
         attempt = _make_attempt_mock(status="pending", order_id=42)
         order = _make_order_mock(id=42, status="pending")
@@ -231,7 +301,9 @@ class TestMarkSuccessAutoPayOrder:
         mock_order_repository.get_by_id.return_value = order
         mock_order_repository.update.side_effect = lambda e: e
 
-        service = PaymentAttemptService(mock_payment_attempt_repository, mock_order_repository)
+        service = PaymentAttemptService(
+            mock_payment_attempt_repository, mock_order_repository, mock_payment_transaction_service
+        )
         service.mark_as_success(1, "txn_verify_args")
 
         # Verify order is looked up by attempt.order_id
@@ -242,12 +314,14 @@ class TestMarkSuccessAutoPayOrder:
         assert updated_order.status == "paid"
 
     def test_attempt_already_success_skips_order_update(
-        self, mock_payment_attempt_repository, mock_order_repository
+        self, mock_payment_attempt_repository, mock_order_repository, mock_payment_transaction_service
     ) -> None:
         attempt = _make_attempt_mock(status="success", channel_transaction_id="txn_old")
         mock_payment_attempt_repository.get_by_id.return_value = attempt
 
-        service = PaymentAttemptService(mock_payment_attempt_repository, mock_order_repository)
+        service = PaymentAttemptService(
+            mock_payment_attempt_repository, mock_order_repository, mock_payment_transaction_service
+        )
         result = service.mark_as_success(1, "txn_new")
 
         assert result.status == "success"
@@ -258,7 +332,7 @@ class TestMarkSuccessAutoPayOrder:
         mock_order_repository.update.assert_not_called()
 
     def test_order_canceled_does_not_raise(
-        self, mock_payment_attempt_repository, mock_order_repository
+        self, mock_payment_attempt_repository, mock_order_repository, mock_payment_transaction_service
     ) -> None:
         """When order is canceled, auto-pay should not raise (skip silently)."""
         attempt = _make_attempt_mock(status="pending", order_id=1)
@@ -268,7 +342,9 @@ class TestMarkSuccessAutoPayOrder:
         mock_order_repository.get_by_id.return_value = order
         mock_order_repository.update.side_effect = lambda e: e
 
-        service = PaymentAttemptService(mock_payment_attempt_repository, mock_order_repository)
+        service = PaymentAttemptService(
+            mock_payment_attempt_repository, mock_order_repository, mock_payment_transaction_service
+        )
         result = service.mark_as_success(1, "txn_canceled_order")
 
         assert result.status == "success"
@@ -277,10 +353,14 @@ class TestMarkSuccessAutoPayOrder:
 
 
 class TestListFiltered:
-    def test_delegates_to_repo(self, mock_payment_attempt_repository, mock_order_repository) -> None:
+    def test_delegates_to_repo(
+        self, mock_payment_attempt_repository, mock_order_repository, mock_payment_transaction_service
+    ) -> None:
         attempts = [_make_attempt_mock()]
         mock_payment_attempt_repository.list_filtered.return_value = attempts
-        service = PaymentAttemptService(mock_payment_attempt_repository, mock_order_repository)
+        service = PaymentAttemptService(
+            mock_payment_attempt_repository, mock_order_repository, mock_payment_transaction_service
+        )
 
         result = service.list_filtered(order_id=1, channel="alipay", status="pending")
 
