@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app.api.deps import CurrentAdmin, SuperAdmin, get_admin_service
 from app.schemas.admin import AdminCreate, AdminResponse, AdminUpdate, PasswordChange
@@ -19,9 +19,11 @@ def create_admin(
 @router.get("/", response_model=list[AdminResponse])
 def list_admins(
     _admin: CurrentAdmin,
+    limit: int = Query(default=100, ge=1, le=500),
+    offset: int = Query(default=0, ge=0),
     admin_service: AdminService = Depends(get_admin_service),
 ) -> list[AdminResponse]:
-    return [AdminResponse.model_validate(a) for a in admin_service.list_all()]
+    return [AdminResponse.model_validate(a) for a in admin_service.list_all(limit=limit, offset=offset)]
 
 
 @router.get("/{admin_id}", response_model=AdminResponse)

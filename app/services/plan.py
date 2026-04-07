@@ -31,8 +31,8 @@ class PlanService(BaseService[Plan]):
     def get_plan(self, plan_id: int) -> Plan | None:
         return self.get(plan_id)
 
-    def list_plans(self) -> list[Plan]:
-        return self.list_all()
+    def list_plans(self, *, limit: int = 100, offset: int = 0) -> list[Plan]:
+        return self.list_all(limit=limit, offset=offset)
 
     def update_plan(self, plan_id: int, data: PlanUpdate) -> Plan | None:
         plan = self.get(plan_id)

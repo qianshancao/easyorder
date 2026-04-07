@@ -79,12 +79,16 @@ class OrderService(BaseService[Order]):
         subscription_id: int | None = None,
         status: str | None = None,
         order_type: str | None = None,
+        limit: int = 100,
+        offset: int = 0,
     ) -> list[Order]:
         results = self.repo.list_filtered(
             external_user_id=external_user_id,
             subscription_id=subscription_id,
             status=status,
             order_type=order_type,
+            limit=limit,
+            offset=offset,
         )
         logger.info(
             "order.listed_filtered",

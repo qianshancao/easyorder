@@ -44,8 +44,8 @@ class TestBaseRepositoryListAll:
         repo.create(Plan(name="A", cycle="monthly", base_price=200))
         result = repo.list_all()
         assert len(result) == 2
-        assert result[0].name == "B"
-        assert result[1].name == "A"
+        assert result[0].name == "A"
+        assert result[1].name == "B"
 
 
 class TestBaseRepositoryUpdate:

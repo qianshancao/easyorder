@@ -361,5 +361,9 @@ class TestListFiltered:
 
         assert result == attempts
         mock_payment_attempt_repository.list_filtered.assert_called_once_with(
-            order_id=1, channel="alipay", status="pending"
+            order_id=1,
+            channel="alipay",
+            status="pending",
+            limit=100,
+            offset=0,
         )

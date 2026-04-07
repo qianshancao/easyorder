@@ -32,6 +32,8 @@ class PaymentTransactionRepository(BaseRepository[PaymentTransaction]):
         order_id: int | None = None,
         channel: str | None = None,
         status: str | None = None,
+        limit: int = 100,
+        offset: int = 0,
     ) -> list[PaymentTransaction]:
         stmt = select(PaymentTransaction).order_by(PaymentTransaction.id.desc())
         if payment_attempt_id is not None:
@@ -42,4 +44,4 @@ class PaymentTransactionRepository(BaseRepository[PaymentTransaction]):
             stmt = stmt.where(PaymentTransaction.channel == channel)
         if status is not None:
             stmt = stmt.where(PaymentTransaction.status == status)
-        return list(self.db.execute(stmt).scalars().all())
+        return list(self.db.execute(stmt.limit(limit).offset(offset)).scalars().all())

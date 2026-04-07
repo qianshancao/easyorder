@@ -62,6 +62,8 @@ def admin_list_all(
     order_id: int | None = Query(default=None),
     status: str | None = Query(default=None),
     channel: str | None = Query(default=None),
+    limit: int = Query(default=100, ge=1, le=500),
+    offset: int = Query(default=0, ge=0),
     service: RefundService = Depends(get_refund_service),
 ) -> list[RefundResponse]:
     return [
@@ -70,6 +72,8 @@ def admin_list_all(
             order_id=order_id,
             status=status,
             channel=channel,
+            limit=limit,
+            offset=offset,
         )
     ]
 

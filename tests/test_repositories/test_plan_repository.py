@@ -79,8 +79,8 @@ class TestPlanRepositoryListAll:
         result = plan_repository.list_all()
 
         assert len(result) == 2
-        assert result[0].name == "Plan A"
-        assert result[1].name == "Plan B"
+        assert result[0].name == "Plan B"
+        assert result[1].name == "Plan A"
 
     def test_list_all_ordered_by_id(self, plan_repository: PlanRepository) -> None:
         p1 = plan_repository.create(_build_plan(name="Zeta"))
@@ -88,8 +88,8 @@ class TestPlanRepositoryListAll:
 
         result = plan_repository.list_all()
 
-        assert result[0].id == p1.id
-        assert result[1].id == p2.id
+        assert result[0].id == p2.id
+        assert result[1].id == p1.id
 
 
 class TestPlanRepositoryUpdate:

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app.api.deps import CurrentAdmin, CurrentApiClient, get_subscription_service
 from app.schemas.order import OrderResponse
@@ -31,9 +31,11 @@ def _call_or_raise(service_fn, subscription_id: int) -> SubscriptionResponse:
 @router.get("/admin/all", response_model=list[SubscriptionResponse])
 def admin_list_all(
     _admin: CurrentAdmin,
+    limit: int = Query(default=100, ge=1, le=500),
+    offset: int = Query(default=0, ge=0),
     service: SubscriptionService = Depends(get_subscription_service),
 ) -> list[SubscriptionResponse]:
-    return [SubscriptionResponse.model_validate(s) for s in service.list_all()]
+    return [SubscriptionResponse.model_validate(s) for s in service.list_all(limit=limit, offset=offset)]
 
 
 @router.get("/admin/{subscription_id}", response_model=SubscriptionResponse)

@@ -24,6 +24,8 @@ class OrderRepository(BaseRepository[Order]):
         subscription_id: int | None = None,
         status: str | None = None,
         order_type: str | None = None,
+        limit: int = 100,
+        offset: int = 0,
     ) -> list[Order]:
         stmt = select(Order).order_by(Order.id.desc())
         if external_user_id is not None:
@@ -34,4 +36,4 @@ class OrderRepository(BaseRepository[Order]):
             stmt = stmt.where(Order.status == status)
         if order_type is not None:
             stmt = stmt.where(Order.type == order_type)
-        return list(self.db.execute(stmt).scalars().all())
+        return list(self.db.execute(stmt.limit(limit).offset(offset)).scalars().all())

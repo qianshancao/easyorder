@@ -40,6 +40,8 @@ class RefundRepository(BaseRepository[Refund]):
         order_id: int | None = None,
         status: str | None = None,
         channel: str | None = None,
+        limit: int = 100,
+        offset: int = 0,
     ) -> list[Refund]:
         stmt = select(Refund).order_by(Refund.id.desc())
         if order_id is not None:
@@ -48,4 +50,4 @@ class RefundRepository(BaseRepository[Refund]):
             stmt = stmt.where(Refund.status == status)
         if channel is not None:
             stmt = stmt.where(Refund.channel == channel)
-        return list(self.db.execute(stmt).scalars().all())
+        return list(self.db.execute(stmt.limit(limit).offset(offset)).scalars().all())

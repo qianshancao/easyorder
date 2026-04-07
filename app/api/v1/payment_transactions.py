@@ -17,6 +17,8 @@ def admin_list_all(
     order_id: int | None = Query(default=None),
     channel: str | None = Query(default=None),
     status: str | None = Query(default=None),
+    limit: int = Query(default=100, ge=1, le=500),
+    offset: int = Query(default=0, ge=0),
     service: PaymentTransactionService = Depends(get_payment_transaction_service),
 ) -> list[PaymentTransactionResponse]:
     return [
@@ -26,6 +28,8 @@ def admin_list_all(
             order_id=order_id,
             channel=channel,
             status=status,
+            limit=limit,
+            offset=offset,
         )
     ]
 
@@ -38,9 +42,7 @@ def admin_get_transaction(
 ) -> PaymentTransactionResponse:
     txn = service.get_transaction(transaction_id)
     if txn is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="支付流水不存在"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="支付流水不存在")
     return PaymentTransactionResponse.model_validate(txn)
 
 
@@ -53,10 +55,7 @@ def list_by_attempt(
     _client: CurrentApiClient,
     service: PaymentTransactionService = Depends(get_payment_transaction_service),
 ) -> list[PaymentTransactionResponse]:
-    return [
-        PaymentTransactionResponse.model_validate(t)
-        for t in service.list_by_attempt(attempt_id)
-    ]
+    return [PaymentTransactionResponse.model_validate(t) for t in service.list_by_attempt(attempt_id)]
 
 
 @router.get("/by-order/{order_id}", response_model=list[PaymentTransactionResponse])
@@ -65,10 +64,7 @@ def list_by_order(
     _client: CurrentApiClient,
     service: PaymentTransactionService = Depends(get_payment_transaction_service),
 ) -> list[PaymentTransactionResponse]:
-    return [
-        PaymentTransactionResponse.model_validate(t)
-        for t in service.list_by_order(order_id)
-    ]
+    return [PaymentTransactionResponse.model_validate(t) for t in service.list_by_order(order_id)]
 
 
 @router.get("/{transaction_id}", response_model=PaymentTransactionResponse)
@@ -79,7 +75,5 @@ def get_transaction(
 ) -> PaymentTransactionResponse:
     txn = service.get_transaction(transaction_id)
     if txn is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="支付流水不存在"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="支付流水不存在")
     return PaymentTransactionResponse.model_validate(txn)

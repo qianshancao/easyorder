@@ -19,8 +19,8 @@ class BaseRepository[ModelType: Base]:
         stmt = select(self.model).where(self.model.id == entity_id)
         return self.db.execute(stmt).scalar_one_or_none()
 
-    def list_all(self) -> list[ModelType]:
-        stmt = select(self.model).order_by(self.model.id)
+    def list_all(self, *, limit: int = 100, offset: int = 0) -> list[ModelType]:
+        stmt = select(self.model).order_by(self.model.id.desc()).limit(limit).offset(offset)
         return list(self.db.execute(stmt).scalars().all())
 
     def update(self, entity: ModelType) -> ModelType:

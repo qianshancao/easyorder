@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app.api.deps import CurrentApiClient, SuperAdmin, get_plan_service
 from app.schemas.plan import PlanCreate, PlanResponse, PlanStatusToggle, PlanUpdate
@@ -20,9 +20,11 @@ def create_plan(
 @router.get("/", response_model=list[PlanResponse])
 def list_plans(
     _client: CurrentApiClient,
+    limit: int = Query(default=100, ge=1, le=500),
+    offset: int = Query(default=0, ge=0),
     service: PlanService = Depends(get_plan_service),
 ) -> list[PlanResponse]:
-    plans = service.list_plans()
+    plans = service.list_plans(limit=limit, offset=offset)
     return [PlanResponse.model_validate(p) for p in plans]
 
 

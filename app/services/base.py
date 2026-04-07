@@ -19,8 +19,8 @@ class BaseService[ModelType: Base]:
             )
         return entity
 
-    def list_all(self) -> list[ModelType]:
-        entities = self.repo.list_all()
+    def list_all(self, *, limit: int = 100, offset: int = 0) -> list[ModelType]:
+        entities = self.repo.list_all(limit=limit, offset=offset)
         self.logger.info(
             self.domain_name + ".listed",
             extra={"count": len(entities)},

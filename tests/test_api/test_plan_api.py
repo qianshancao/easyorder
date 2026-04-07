@@ -77,8 +77,8 @@ class TestListPlans:
         assert response.status_code == 200
         data = response.json()
         assert len(data) == 2
-        assert data[0]["name"] == "Plan A"
-        assert data[1]["name"] == "Plan B"
+        assert data[0]["name"] == "Plan B"
+        assert data[1]["name"] == "Plan A"
 
     def test_list_plans_requires_auth(self, client: TestClient) -> None:
         response = client.get("/api/v1/plans/")

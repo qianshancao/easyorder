@@ -187,5 +187,10 @@ class TestListFiltered:
         result = service.list_filtered(status="pending", order_type="one_time")
         assert result == orders
         mock_order_repository.list_filtered.assert_called_once_with(
-            external_user_id=None, subscription_id=None, status="pending", order_type="one_time"
+            external_user_id=None,
+            subscription_id=None,
+            status="pending",
+            order_type="one_time",
+            limit=100,
+            offset=0,
         )

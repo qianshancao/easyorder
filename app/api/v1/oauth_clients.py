@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app.api.deps import SuperAdmin, get_oauth_client_service
 from app.schemas.oauth_client import OAuthClientCreate, OAuthClientResponse, OAuthClientSecretResponse
@@ -20,9 +20,11 @@ def create_client(
 @router.get("/", response_model=list[OAuthClientResponse])
 def list_clients(
     _admin: SuperAdmin,
+    limit: int = Query(default=100, ge=1, le=500),
+    offset: int = Query(default=0, ge=0),
     client_service: OAuthClientService = Depends(get_oauth_client_service),
 ) -> list[OAuthClientResponse]:
-    return [OAuthClientResponse.model_validate(c) for c in client_service.list_all()]
+    return [OAuthClientResponse.model_validate(c) for c in client_service.list_all(limit=limit, offset=offset)]
 
 
 @router.put("/{client_id}/status", response_model=OAuthClientResponse)

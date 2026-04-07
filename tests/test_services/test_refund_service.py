@@ -177,7 +177,13 @@ class TestListRefunds:
         result = service.list_refunds(order_id=1, status="pending", channel="alipay")
 
         assert result == refunds
-        mock_refund_repository.list_filtered.assert_called_once_with(order_id=1, status="pending", channel="alipay")
+        mock_refund_repository.list_filtered.assert_called_once_with(
+            order_id=1,
+            status="pending",
+            channel="alipay",
+            limit=100,
+            offset=0,
+        )
 
 
 class TestMarkSuccess:

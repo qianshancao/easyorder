@@ -39,6 +39,8 @@ def admin_list_all(
     order_type: str | None = Query(default=None, alias="type"),
     external_user_id: str | None = Query(default=None),
     subscription_id: int | None = Query(default=None),
+    limit: int = Query(default=100, ge=1, le=500),
+    offset: int = Query(default=0, ge=0),
     service: OrderService = Depends(get_order_service),
 ) -> list[OrderResponse]:
     return [
@@ -48,6 +50,8 @@ def admin_list_all(
             order_type=order_type,
             external_user_id=external_user_id,
             subscription_id=subscription_id,
+            limit=limit,
+            offset=offset,
         )
     ]
 

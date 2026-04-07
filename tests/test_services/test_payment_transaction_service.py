@@ -124,5 +124,10 @@ class TestListFiltered:
 
         assert result == txns
         mock_payment_transaction_repository.list_filtered.assert_called_once_with(
-            order_id=1, channel="alipay", payment_attempt_id=None, status=None
+            order_id=1,
+            channel="alipay",
+            payment_attempt_id=None,
+            status=None,
+            limit=100,
+            offset=0,
         )

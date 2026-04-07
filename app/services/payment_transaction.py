@@ -67,12 +67,16 @@ class PaymentTransactionService(BaseService[PaymentTransaction]):
         order_id: int | None = None,
         channel: str | None = None,
         status: str | None = None,
+        limit: int = 100,
+        offset: int = 0,
     ) -> list[PaymentTransaction]:
         results = self.repo.list_filtered(
             payment_attempt_id=payment_attempt_id,
             order_id=order_id,
             channel=channel,
             status=status,
+            limit=limit,
+            offset=offset,
         )
         self.logger.info(
             "payment_transaction.listed_filtered",

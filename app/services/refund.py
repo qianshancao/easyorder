@@ -95,11 +95,15 @@ class RefundService(BaseService[Refund]):
         order_id: int | None = None,
         status: str | None = None,
         channel: str | None = None,
+        limit: int = 100,
+        offset: int = 0,
     ) -> list[Refund]:
         results = self.repo.list_filtered(
             order_id=order_id,
             status=status,
             channel=channel,
+            limit=limit,
+            offset=offset,
         )
         logger.info(
             "refund.listed",
